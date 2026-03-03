@@ -27,10 +27,14 @@ export const profileRouter = {
     .input(
       z.object({
         birthDate: z.string().optional(),
+        gender: z.enum(["male", "female"]).optional(),
         heightCm: z.number().min(50).max(250).optional(),
         currentWeightKg: z.number().min(20).max(500).optional(),
         goalWeightKg: z.number().min(20).max(500).optional(),
         dailyCalorieGoal: z.number().int().min(800).max(5000).optional(),
+        dailyProteinGoal: z.number().int().min(0).optional(),
+        dailyCarbsGoal: z.number().int().min(0).optional(),
+        dailyFatGoal: z.number().int().min(0).optional(),
         activityLevel: activityLevelSchema.optional(),
       }),
     )
@@ -42,10 +46,14 @@ export const profileRouter = {
         .values({
           userId,
           birthDate: input.birthDate,
+          gender: input.gender,
           heightCm: input.heightCm,
           currentWeightKg: input.currentWeightKg,
           goalWeightKg: input.goalWeightKg,
           dailyCalorieGoal: input.dailyCalorieGoal,
+          dailyProteinGoal: input.dailyProteinGoal,
+          dailyCarbsGoal: input.dailyCarbsGoal,
+          dailyFatGoal: input.dailyFatGoal,
           activityLevel: input.activityLevel,
         })
         .onConflictDoUpdate({
@@ -54,9 +62,8 @@ export const profileRouter = {
             ...(input.birthDate !== undefined && {
               birthDate: input.birthDate,
             }),
-            ...(input.heightCm !== undefined && {
-              heightCm: input.heightCm,
-            }),
+            ...(input.gender !== undefined && { gender: input.gender }),
+            ...(input.heightCm !== undefined && { heightCm: input.heightCm }),
             ...(input.currentWeightKg !== undefined && {
               currentWeightKg: input.currentWeightKg,
             }),
@@ -65,6 +72,15 @@ export const profileRouter = {
             }),
             ...(input.dailyCalorieGoal !== undefined && {
               dailyCalorieGoal: input.dailyCalorieGoal,
+            }),
+            ...(input.dailyProteinGoal !== undefined && {
+              dailyProteinGoal: input.dailyProteinGoal,
+            }),
+            ...(input.dailyCarbsGoal !== undefined && {
+              dailyCarbsGoal: input.dailyCarbsGoal,
+            }),
+            ...(input.dailyFatGoal !== undefined && {
+              dailyFatGoal: input.dailyFatGoal,
             }),
             ...(input.activityLevel !== undefined && {
               activityLevel: input.activityLevel,

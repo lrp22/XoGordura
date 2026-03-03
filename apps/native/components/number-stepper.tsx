@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useThemeColor } from "heroui-native";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, TextInput, View } from "react-native";
+import { useState, useEffect } from "react";
 
 interface NumberStepperProps {
   label: string;
@@ -28,15 +29,31 @@ export function NumberStepper({
   const isMin = value <= min;
   const isMax = value >= max;
 
+  // Local state so the user can type freely (like "75.") before it formats
+  const [textValue, setTextValue] = useState(value.toFixed(decimals));
+
+  useEffect(() => {
+    setTextValue(value.toFixed(decimals));
+  }, [value, decimals]);
+
+  function handleBlur() {
+    let parsed = parseFloat(textValue.replace(",", "."));
+    if (isNaN(parsed)) parsed = min;
+    parsed = Math.max(min, Math.min(max, parsed));
+    onChange(parsed);
+    setTextValue(parsed.toFixed(decimals));
+  }
+
   function handlePress(delta: number) {
-    if (Platform.OS !== "web") {
+    if (Platform.OS !== "web")
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    // Round to avoid floating point drift
     const precision = decimals + 1;
     const factor = 10 ** precision;
-    const newValue = Math.round((value + delta) * factor) / factor;
-    onChange(Math.max(min, Math.min(max, newValue)));
+    const newValue = Math.max(
+      min,
+      Math.min(max, Math.round((value + delta) * factor) / factor),
+    );
+    onChange(newValue);
   }
 
   return (
@@ -46,7 +63,6 @@ export function NumberStepper({
       </Text>
 
       <View className="flex-row items-center gap-5">
-        {/* Minus button */}
         <Pressable
           onPress={() => handlePress(-step)}
           disabled={isMin}
@@ -55,14 +71,15 @@ export function NumberStepper({
           <Ionicons name="remove" size={32} color={foregroundColor} />
         </Pressable>
 
-        {/* Value display */}
-        <View className="items-center min-w-[120px]">
-          <Text className="text-foreground text-5xl font-bold tabular-nums">
-            {value.toFixed(decimals)}
-          </Text>
-        </View>
+        <TextInput
+          value={textValue}
+          onChangeText={setTextValue}
+          onBlur={handleBlur}
+          keyboardType="numeric"
+          returnKeyType="done"
+          className="text-foreground text-5xl font-bold tabular-nums text-center min-w-[120px]"
+        />
 
-        {/* Plus button */}
         <Pressable
           onPress={() => handlePress(step)}
           disabled={isMax}

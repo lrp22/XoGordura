@@ -110,22 +110,6 @@ export default function LogMealConfirm() {
     () => analysisResult?.items ?? [],
   );
 
-  // Redirect if no analysis result (shouldn't happen, but safe)
-  if (!analysisResult) {
-    return (
-      <Container isScrollable={false}>
-        <View className="flex-1 items-center justify-center px-6 gap-4">
-          <Text className="text-foreground text-xl">
-            Nenhum resultado encontrado
-          </Text>
-          <Button onPress={() => router.back()}>
-            <Button.Label>Voltar</Button.Label>
-          </Button>
-        </View>
-      </Container>
-    );
-  }
-
   // Recalculate totals from remaining items
   const totals = useMemo(() => {
     return items.reduce(
@@ -147,14 +131,13 @@ export default function LogMealConfirm() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // Save mutation
+  // ✅ MOVED: Save mutation — must be called before any early return
   const saveMutation = useMutation(
     orpc.meal.create.mutationOptions({
       onSuccess: async () => {
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        // Refresh home screen data
         await queryClient.invalidateQueries();
         reset();
         router.dismissAll();
@@ -162,6 +145,7 @@ export default function LogMealConfirm() {
     }),
   );
 
+  // ✅ MOVED: handleSave — also before the early return
   function handleSave() {
     if (items.length === 0 || !analysisResult) return;
 
@@ -193,6 +177,22 @@ export default function LogMealConfirm() {
       aiTip: analysisResult.tip,
       aiRawResponse: JSON.stringify(analysisResult),
     });
+  }
+
+  // ✅ Early return is now AFTER all hooks
+  if (!analysisResult) {
+    return (
+      <Container isScrollable={false}>
+        <View className="flex-1 items-center justify-center px-6 gap-4">
+          <Text className="text-foreground text-xl">
+            Nenhum resultado encontrado
+          </Text>
+          <Button onPress={() => router.back()}>
+            <Button.Label>Voltar</Button.Label>
+          </Button>
+        </View>
+      </Container>
+    );
   }
 
   return (

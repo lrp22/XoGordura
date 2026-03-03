@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs, useRouter } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { useThemeColor } from "heroui-native";
-import { useEffect } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
@@ -9,15 +8,12 @@ import { authClient } from "@/lib/auth-client";
 export default function TabsLayout() {
   const foregroundColor = useThemeColor("foreground");
   const backgroundColor = useThemeColor("background");
-  const { data: session } = authClient.useSession();
-  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
 
   // If session is lost (sign out), go back to gate
-  useEffect(() => {
-    if (session === null) {
-      router.replace("/");
-    }
-  }, [session, router]);
+  if (!isPending && session === null) {
+    return <Redirect href="/" />;
+  }
 
   return (
     <Tabs

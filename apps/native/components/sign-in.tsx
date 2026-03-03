@@ -88,8 +88,6 @@ function SignIn() {
 
   return (
     <Surface variant="secondary" className="p-4 rounded-lg">
-      <Text className="text-foreground font-medium mb-4">Sign In</Text>
-
       <form.Subscribe
         selector={(state) => ({
           isSubmitting: state.isSubmitting,
@@ -132,7 +130,7 @@ function SignIn() {
                 <form.Field name="password">
                   {(field) => (
                     <TextField>
-                      <Label>Password</Label>
+                      <Label>Senha</Label>
                       <Input
                         ref={passwordInputRef}
                         value={field.state.value}
@@ -153,7 +151,7 @@ function SignIn() {
                   {isSubmitting ? (
                     <Spinner size="sm" color="default" />
                   ) : (
-                    <Button.Label>Sign In</Button.Label>
+                    <Button.Label>Entrar</Button.Label>
                   )}
                 </Button>
               </View>

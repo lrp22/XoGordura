@@ -34,13 +34,6 @@ export default function HomeScreen() {
     router.push("/log-meal");
   }
 
-  function handleAddWeight() {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    router.push("/log-weight");
-  }
-
   if (profileQuery.isLoading) {
     return (
       <Container isScrollable={false}>
@@ -75,24 +68,6 @@ export default function HomeScreen() {
         {/* ── Calorie ring ────────────────────── */}
         <View className="items-center py-2">
           <CalorieRing consumed={consumedCalories} goal={goalCalories} />
-        </View>
-
-        {/* ── Quick actions ───────────────────── */}
-        <View className="flex-row gap-3">
-          <Pressable
-            onPress={handleAddWeight}
-            className="flex-1 active:opacity-80"
-          >
-            <Surface
-              variant="secondary"
-              className="p-4 rounded-xl flex-row items-center gap-3"
-            >
-              <Text className="text-2xl">⚖️</Text>
-              <Text className="text-foreground text-base font-medium">
-                Registrar peso
-              </Text>
-            </Surface>
-          </Pressable>
         </View>
 
         {/* ── Today's meals ───────────────────── */}

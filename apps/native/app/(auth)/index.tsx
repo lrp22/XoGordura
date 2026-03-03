@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Redirect } from "expo-router";
+import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
 import { Container } from "@/components/container";
@@ -8,16 +8,13 @@ import { SignUp } from "@/components/sign-up";
 import { authClient } from "@/lib/auth-client";
 
 export default function AuthScreen() {
-  const { data: session } = authClient.useSession();
-  const router = useRouter();
-  const [showSignIn, setShowSignIn] = useState(true);
+  const { data: session, isPending } = authClient.useSession();
+  const[showSignIn, setShowSignIn] = useState(true);
 
-  // When session appears (user just signed in/up), go back to gate
-  useEffect(() => {
-    if (session?.user) {
-      router.replace("/");
-    }
-  }, [session, router]);
+  // If session appears (user just signed in/up), redirect to gate
+  if (!isPending && session?.user) {
+    return <Redirect href="/" />;
+  }
 
   return (
     <Container>

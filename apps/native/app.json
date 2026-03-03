@@ -17,6 +17,9 @@
     },
     "android": {
       "package": "com.anonymous.XoGordura"
+    },
+    "ios": {
+      "bundleIdentifier": "com.anonymous.XoGordura"
     }
   }
 }

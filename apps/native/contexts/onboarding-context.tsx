@@ -10,10 +10,12 @@ import {
 
 export interface OnboardingData {
   birthYear: number;
+  gender: "male" | "female"; // Novo
   heightCm: number;
   currentWeightKg: number;
   goalWeightKg: number;
   activityLevel: ActivityLevel;
+  deficitPercentage: number; // Novo (0.10 ou 0.20)
 }
 
 interface OnboardingContextType {
@@ -24,11 +26,13 @@ interface OnboardingContextType {
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
 const DEFAULT_DATA: OnboardingData = {
-  birthYear: 1965,
-  heightCm: 160,
-  currentWeightKg: 75,
-  goalWeightKg: 68,
+  birthYear: 1990,
+  gender: "female",
+  heightCm: 165,
+  currentWeightKg: 80,
+  goalWeightKg: 70,
   activityLevel: "sedentary",
+  deficitPercentage: 0.2, // Padrão 20%
 };
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
@@ -49,8 +53,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
 export function useOnboarding() {
   const ctx = useContext(OnboardingContext);
-  if (!ctx) {
+  if (!ctx)
     throw new Error("useOnboarding must be used within OnboardingProvider");
-  }
   return ctx;
 }

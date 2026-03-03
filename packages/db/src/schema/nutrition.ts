@@ -22,16 +22,20 @@ export const userProfile = pgTable("user_profile", {
     .notNull()
     .unique()
     .references(() => user.id, { onDelete: "cascade" }),
-  birthDate: text("birth_date"), // "1960-03-15" — stored as text for simplicity
+  birthDate: text("birth_date"),
+  gender: text("gender").default("female"), // <-- ADD THIS
   heightCm: real("height_cm"),
   currentWeightKg: real("current_weight_kg"),
   goalWeightKg: real("goal_weight_kg"),
   dailyCalorieGoal: integer("daily_calorie_goal").default(1500),
-  activityLevel: text("activity_level").default("sedentary"), // sedentary | light | moderate | active
+  dailyProteinGoal: integer("daily_protein_goal").default(100), // <-- ADD THIS
+  dailyCarbsGoal: integer("daily_carbs_goal").default(150), // <-- ADD THIS
+  dailyFatGoal: integer("daily_fat_goal").default(50), // <-- ADD THIS
+  activityLevel: text("activity_level").default("sedentary"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
