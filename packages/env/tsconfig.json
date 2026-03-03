@@ -1,0 +1,3 @@
+{
+  "extends": "@XoGordura/config/tsconfig.base.json"
+}

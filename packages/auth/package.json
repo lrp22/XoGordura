@@ -1,0 +1,25 @@
+{
+  "name": "@XoGordura/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@XoGordura/db": "workspace:*",
+    "@XoGordura/env": "workspace:*",
+    "@better-auth/expo": "catalog:",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@XoGordura/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
