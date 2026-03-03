@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CloseButton, Spinner, Surface } from "heroui-native";
+import { Spinner, Surface, useThemeColor } from "heroui-native";
 import { Platform, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Container } from "@/components/container";
@@ -10,6 +10,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function ProgressScreen() {
   const router = useRouter();
+  const foregroundColor = useThemeColor("foreground");
   const weightQuery = useQuery(orpc.weight.getHistory.queryOptions());
   const weights = weightQuery.data ?? [];
 
@@ -60,9 +61,12 @@ export default function ProgressScreen() {
             Histórico
           </Text>
           {/* ═══  Button ═══════════════ */}
-
           <Button onPress={handleAddWeight} className="active:opacity-80 p-2">
-            <MaterialIcons name="add-circle-outline" size={24} color="black" />
+            <MaterialIcons
+              name="add-circle-outline"
+              size={24}
+              color={foregroundColor}
+            />
           </Button>
         </View>
         {/* Weight history list logic */}

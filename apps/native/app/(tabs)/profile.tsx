@@ -7,7 +7,7 @@ import { Platform, Pressable, Text, View } from "react-native";
 
 import { Container } from "@/components/container";
 import { authClient } from "@/lib/auth-client";
-import { calcAge } from "@/lib/calories";
+import { calcAge, calcCaloriesFromMacros } from "@/lib/calories";
 import { queryClient, orpc } from "@/utils/orpc";
 
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -31,6 +31,7 @@ export default function ProfileScreen() {
   const { data: session } = authClient.useSession();
   const profileQuery = useQuery(orpc.profile.get.queryOptions());
   const dangerColor = useThemeColor("danger");
+  const primaryColor = useThemeColor("accent");
 
   const profile = profileQuery.data;
 
@@ -42,6 +43,13 @@ export default function ProfileScreen() {
     await authClient.signOut();
     queryClient.clear();
     router.replace("/");
+  }
+
+  function handleEditGoals() {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push("/edit-goals" as never);
   }
 
   if (profileQuery.isLoading) {
@@ -108,13 +116,76 @@ export default function ProfileScreen() {
                   }
                 />
               )}
-              {profile.dailyCalorieGoal && (
-                <InfoRow
-                  label="Meta diária"
-                  value={`${profile.dailyCalorieGoal.toLocaleString("pt-BR")} kcal`}
-                />
-              )}
             </View>
+          </Surface>
+        )}
+
+        {/* ── Calorie & Macro Goals (editable) ── */}
+        {profile && (
+          <Surface variant="secondary" className="p-5 rounded-2xl">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-foreground text-lg font-bold">
+                Metas Nutricionais
+              </Text>
+              <Pressable
+                onPress={handleEditGoals}
+                hitSlop={12}
+                className="flex-row items-center gap-1 active:opacity-60"
+              >
+                <Ionicons name="pencil" size={16} color={primaryColor} />
+                <Text className="text-primary text-sm font-semibold">
+                  Editar
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Calorie goal */}
+            <View className="items-center py-3 border-b border-muted/20">
+              <Text className="text-muted text-sm">Meta diária</Text>
+              <Text className="text-primary text-3xl font-bold">
+                {(profile.dailyCalorieGoal ?? 1500).toLocaleString("pt-BR")}{" "}
+                kcal
+              </Text>
+            </View>
+
+            {/* Macro breakdown */}
+            <View className="flex-row justify-between pt-4">
+              <View className="items-center flex-1">
+                <Text className="text-foreground text-xl font-bold">
+                  {profile.dailyProteinGoal ?? "–"}g
+                </Text>
+                <Text className="text-muted text-xs">Proteína</Text>
+              </View>
+              <View className="items-center flex-1">
+                <Text className="text-foreground text-xl font-bold">
+                  {profile.dailyFatGoal ?? "–"}g
+                </Text>
+                <Text className="text-muted text-xs">Gordura</Text>
+              </View>
+              <View className="items-center flex-1">
+                <Text className="text-foreground text-xl font-bold">
+                  {profile.dailyCarbsGoal ?? "–"}g
+                </Text>
+                <Text className="text-muted text-xs">Carbos</Text>
+              </View>
+            </View>
+
+            {/* Macro calorie total */}
+            {profile.dailyProteinGoal != null &&
+              profile.dailyCarbsGoal != null &&
+              profile.dailyFatGoal != null && (
+                <View className="mt-3 pt-3 border-t border-muted/20">
+                  <Text className="text-muted text-xs text-center">
+                    Macros totalizam{" "}
+                    {calcCaloriesFromMacros(
+                      profile.dailyProteinGoal,
+                      profile.dailyCarbsGoal,
+                      profile.dailyFatGoal,
+                    )}{" "}
+                    kcal
+                  </Text>
+                </View>
+              )}
           </Surface>
         )}
 

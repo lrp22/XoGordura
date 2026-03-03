@@ -1,4 +1,5 @@
-import type { ActivityLevel } from "@/lib/calories";
+import type { ActivityLevel, MacroPresetKey } from "@/lib/calories";
+import { MACRO_PRESETS } from "@/lib/calories";
 import {
   createContext,
   useContext,
@@ -10,12 +11,13 @@ import {
 
 export interface OnboardingData {
   birthYear: number;
-  gender: "male" | "female"; // Novo
+  gender: "male" | "female";
   heightCm: number;
   currentWeightKg: number;
   goalWeightKg: number;
   activityLevel: ActivityLevel;
-  deficitPercentage: number; // Novo (0.10 ou 0.20)
+  deficitPercentage: number;
+  macroPreset: MacroPresetKey;
 }
 
 interface OnboardingContextType {
@@ -32,7 +34,8 @@ const DEFAULT_DATA: OnboardingData = {
   currentWeightKg: 80,
   goalWeightKg: 70,
   activityLevel: "sedentary",
-  deficitPercentage: 0.2, // Padrão 20%
+  deficitPercentage: 0.2,
+  macroPreset: "moderate",
 };
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {

@@ -1,6 +1,7 @@
+import { ORPCError } from "@orpc/server";
 import { db } from "@XoGordura/db";
 import { weightLog } from "@XoGordura/db/schema/nutrition";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import z from "zod";
 
 import { protectedProcedure } from "../index";
@@ -54,7 +55,21 @@ export const weightRouter = {
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .handler(async ({ input, context }) => {
-      await db.delete(weightLog).where(eq(weightLog.id, input.id));
+      const result = await db
+        .delete(weightLog)
+        .where(
+          and(
+            eq(weightLog.id, input.id),
+            eq(weightLog.userId, context.session.user.id),
+          ),
+        )
+        .returning();
+
+      if (result.length === 0) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Registro não encontrado",
+        });
+      }
 
       return { success: true };
     }),

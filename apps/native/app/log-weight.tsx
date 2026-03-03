@@ -3,19 +3,27 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Button, Spinner, Surface } from "heroui-native";
 import { Platform, Text, View } from "react-native";
+import { useState, useEffect } from "react";
 
 import { Container } from "@/components/container";
 import { NumberStepper } from "@/components/number-stepper";
 import { getLocalToday } from "@/lib/date";
 import { queryClient, orpc } from "@/utils/orpc";
-import { useState } from "react";
 
 export default function LogWeight() {
   const router = useRouter();
 
   const profileQuery = useQuery(orpc.profile.get.queryOptions());
-  const initialWeight = profileQuery.data?.currentWeightKg ?? 70;
-  const [weight, setWeight] = useState(initialWeight);
+  const [weight, setWeight] = useState<number | null>(null);
+
+  // Sync weight once when profile finishes loading
+  useEffect(() => {
+    if (profileQuery.data?.currentWeightKg != null && weight === null) {
+      setWeight(profileQuery.data.currentWeightKg);
+    }
+  }, [profileQuery.data?.currentWeightKg, weight]);
+
+  const displayWeight = weight ?? profileQuery.data?.currentWeightKg ?? 70;
 
   const saveMutation = useMutation(
     orpc.weight.log.mutationOptions({
@@ -35,8 +43,19 @@ export default function LogWeight() {
     }
     saveMutation.mutate({
       date: getLocalToday(),
-      weightKg: weight,
+      weightKg: displayWeight,
     });
+  }
+
+  if (profileQuery.isLoading) {
+    return (
+      <Container isScrollable={false}>
+        <View className="flex-1 items-center justify-center gap-4">
+          <Spinner size="lg" />
+          <Text className="text-muted text-lg">Carregando perfil...</Text>
+        </View>
+      </Container>
+    );
   }
 
   return (
@@ -59,7 +78,7 @@ export default function LogWeight() {
         <NumberStepper
           label="Peso"
           unit="kg"
-          value={weight}
+          value={displayWeight}
           onChange={setWeight}
           min={30}
           max={250}

@@ -1,9 +1,15 @@
 import { useRouter } from "expo-router";
 import { Button, Surface, useThemeColor } from "heroui-native";
 import { Text, View, Pressable } from "react-native";
+
 import { Container } from "@/components/container";
 import { NumberStepper } from "@/components/number-stepper";
 import { useOnboarding } from "@/contexts/onboarding-context";
+
+const DEFICIT_OPTIONS = [
+  { value: 0.1, label: "MODERADA", description: "-10% das calorias" },
+  { value: 0.2, label: "AGRESSIVA", description: "-20% das calorias" },
+] as const;
 
 export default function OnboardingBody() {
   const router = useRouter();
@@ -43,29 +49,35 @@ export default function OnboardingBody() {
             Intensidade da Dieta (Déficit)
           </Text>
           <View className="flex-row gap-4">
-            {[0.1, 0.2].map((d) => (
-              <Pressable
-                key={d}
-                onPress={() => update({ deficitPercentage: d })}
-                className="flex-1"
-              >
-                <Surface
-                  variant="secondary"
-                  className="py-4 rounded-xl items-center"
-                  style={
-                    data.deficitPercentage === d
-                      ? { borderWidth: 2, borderColor: primaryColor }
-                      : {}
-                  }
+            {DEFICIT_OPTIONS.map((opt) => {
+              const isSelected = data.deficitPercentage === opt.value;
+              return (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => update({ deficitPercentage: opt.value })}
+                  className="flex-1 active:opacity-80"
                 >
-                  <Text
-                    className={`font-bold ${data.deficitPercentage === d ? "text-primary" : "text-muted"}`}
+                  <Surface
+                    variant="secondary"
+                    className="py-4 rounded-xl items-center gap-1"
+                    style={
+                      isSelected
+                        ? { borderWidth: 2, borderColor: primaryColor }
+                        : { borderWidth: 2, borderColor: "transparent" }
+                    }
                   >
-                    {d === 0.1 ? "MODERADA (-10%)" : "AGRESSIVA (-20%)"}
-                  </Text>
-                </Surface>
-              </Pressable>
-            ))}
+                    <Text
+                      className={`font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
+                    >
+                      {opt.label}
+                    </Text>
+                    <Text className="text-muted text-xs">
+                      {opt.description}
+                    </Text>
+                  </Surface>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 

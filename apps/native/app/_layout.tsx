@@ -33,6 +33,14 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
+                  name="edit-goals"
+                  options={{
+                    presentation: "modal",
+                    headerShown: true,
+                    headerTitle: "Editar Metas",
+                  }}
+                />
+                <Stack.Screen
                   name="+not-found"
                   options={{ headerShown: true, title: "Not Found" }}
                 />
