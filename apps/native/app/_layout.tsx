@@ -8,27 +8,35 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppThemeProvider } from "@/contexts/app-theme-context";
 import { queryClient } from "@/utils/orpc";
 
-export const unstable_settings = {
-  initialRouteName: "(drawer)",
-};
-
-function StackLayout() {
-  return (
-    <Stack screenOptions={{}}>
-      <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ title: "Modal", presentation: "modal" }} />
-    </Stack>
-  );
-}
-
-export default function Layout() {
+export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardProvider>
           <AppThemeProvider>
             <HeroUINativeProvider>
-              <StackLayout />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="log-meal"
+                  options={{ presentation: "modal" }}
+                />
+                <Stack.Screen
+                  name="log-weight"
+                  options={{
+                    presentation: "modal",
+                    headerShown: true,
+                    headerTitle: "",
+                  }}
+                />
+                <Stack.Screen
+                  name="+not-found"
+                  options={{ headerShown: true, title: "Not Found" }}
+                />
+              </Stack>
             </HeroUINativeProvider>
           </AppThemeProvider>
         </KeyboardProvider>
