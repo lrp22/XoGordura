@@ -1,7 +1,6 @@
 import { assignConfidence, computeWeightedAverage } from "./aggregator";
 import { searchFatSecret } from "./fatsecret";
-import { parseWithGemini } from "./gemini";
-import { searchNutritionix } from "./nutritionix";
+import { parseWithAI } from "./gemini";
 import { resolvePortionGrams } from "./portions";
 import { scaleTaco, searchTaco } from "./taco-database";
 import type {
@@ -13,10 +12,9 @@ import type {
 // ─── Config from environment ─────────────────────────────
 interface PipelineConfig {
   geminiApiKey: string;
+  groqApiKey?: string;
   fatSecretClientId?: string;
   fatSecretClientSecret?: string;
-  nutritionixAppId?: string;
-  nutritionixAppKey?: string;
 }
 
 function getConfig(): PipelineConfig {
@@ -27,10 +25,9 @@ function getConfig(): PipelineConfig {
 
   return {
     geminiApiKey,
+    groqApiKey: process.env.GROQ_API_KEY,
     fatSecretClientId: process.env.FATSECRET_CLIENT_ID,
     fatSecretClientSecret: process.env.FATSECRET_CLIENT_SECRET,
-    nutritionixAppId: process.env.NUTRITIONIX_APP_ID,
-    nutritionixAppKey: process.env.NUTRITIONIX_APP_KEY,
   };
 }
 
@@ -82,22 +79,7 @@ async function lookupFoodItem(
     }
   }
 
-  // ── Source 3: Nutritionix (API call, English) ──────
-  if (config.nutritionixAppId && config.nutritionixAppKey) {
-    // Build English query with portion
-    const enQuery = `${Math.round(portionG)}g ${item.nameEn}`;
-    const result = await searchNutritionix(
-      enQuery,
-      config.nutritionixAppId,
-      config.nutritionixAppKey,
-    );
-    if (result) {
-      sources.push(assignConfidence(result, item.type));
-    }
-  }
-
-  // ── Source 4: AI Estimate (always available) ───────
-  // Used as fallback; always included with low confidence
+  // ── Source 3: AI Estimate (always available) ───────
   sources.push(
     assignConfidence(
       {
@@ -122,8 +104,12 @@ export async function analyzeMeal(
 ): Promise<MealAnalysisResult> {
   const config = getConfig();
 
-  // ═══ STEP 1: Parse with Gemini ═══
-  const parsed = await parseWithGemini(voiceTranscript, config.geminiApiKey);
+  // ═══ STEP 1: Parse with AI (Gemini → Groq fallback) ═══
+  const parsed = await parseWithAI(
+    voiceTranscript,
+    config.geminiApiKey,
+    config.groqApiKey,
+  );
 
   // ═══ STEP 2: Look up each item across all sources ═══
   const itemResults = await Promise.all(

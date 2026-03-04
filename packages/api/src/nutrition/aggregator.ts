@@ -5,14 +5,12 @@ const SOURCE_CONFIDENCE = {
   basic: {
     taco: 0.95,
     fatsecret: 0.85,
-    nutritionix: 0.7,
     web: 0.6,
     ai_estimate: 0.5,
   },
   branded: {
     taco: 0.0,
     fatsecret: 0.95,
-    nutritionix: 0.8,
     web: 0.9,
     ai_estimate: 0.4,
   },
@@ -39,8 +37,6 @@ export function computeWeightedAverage(
   const validSources = sources.filter((s) => s.confidence > 0);
 
   if (validSources.length === 0) {
-    // This shouldn't happen (AI estimate always has > 0 confidence)
-    // but handle gracefully
     return {
       name: foodName,
       portion,

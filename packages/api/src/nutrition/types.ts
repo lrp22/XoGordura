@@ -1,7 +1,7 @@
 // ─── Parsed food item from Gemini ────────────────────────
 export interface ParsedFoodItem {
   name: string; // "Arroz branco"
-  nameEn: string; // "cooked white rice" (for Nutritionix)
+  nameEn: string; // "cooked white rice" (for search)
   portion: string; // "1 escumadeira média"
   estimatedGrams: number; // 125
   type: "basic" | "branded"; // basic = homemade, branded = packaged
@@ -22,7 +22,7 @@ export interface GeminiParseResponse {
 
 // ─── Single source lookup result ─────────────────────────
 export interface NutritionSource {
-  source: "taco" | "fatsecret" | "nutritionix" | "web" | "ai_estimate";
+  source: "taco" | "fatsecret" | "web" | "ai_estimate";
   calories: number;
   proteinG: number;
   carbsG: number;

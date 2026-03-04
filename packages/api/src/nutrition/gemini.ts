@@ -1,6 +1,12 @@
 import type { GeminiParseResponse } from "./types";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+// ─── Model fallback chain ────────────────────────────────
+// If the primary model hits rate limits (429), we try the next one.
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+] as const;
 
 const SYSTEM_PROMPT = `Você é um assistente nutricional brasileiro especializado em identificar alimentos em descrições de refeições.
 
@@ -42,11 +48,13 @@ FORMATO:
   "tip": "Boa escolha! Arroz com feijão é uma combinação de proteína completa 💪"
 }`;
 
-export async function parseWithGemini(
+// ─── Call a single Gemini model ──────────────────────────
+async function callGemini(
   voiceTranscript: string,
   apiKey: string,
+  model: string,
 ): Promise<GeminiParseResponse> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -63,14 +71,18 @@ export async function parseWithGemini(
       ],
       generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0.2, // low creativity, high accuracy
+        temperature: 0.2,
       },
     }),
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${error}`);
+    const errorBody = await response.text();
+    const err = new Error(
+      `Gemini ${model} error (${response.status}): ${errorBody}`,
+    );
+    (err as any).status = response.status;
+    throw err;
   }
 
   const data = (await response.json()) as {
@@ -79,19 +91,123 @@ export async function parseWithGemini(
 
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
-    throw new Error("Gemini returned empty response");
+    throw new Error(`Gemini ${model} returned empty response`);
   }
 
   const parsed = JSON.parse(text) as GeminiParseResponse;
 
-  // Validate the response has items
   if (
     !parsed.items ||
     !Array.isArray(parsed.items) ||
     parsed.items.length === 0
   ) {
-    throw new Error("Gemini returned no food items");
+    throw new Error(`Gemini ${model} returned no food items`);
   }
 
   return parsed;
+}
+
+// ─── Call Groq (Llama) as final fallback ─────────────────
+async function callGroq(
+  voiceTranscript: string,
+  apiKey: string,
+): Promise<GeminiParseResponse> {
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: `DESCRIÇÃO DA REFEIÇÃO:\n"${voiceTranscript}"`,
+          },
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Groq error (${response.status}): ${errorBody}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error("Groq returned empty response");
+  }
+
+  const parsed = JSON.parse(text) as GeminiParseResponse;
+
+  if (
+    !parsed.items ||
+    !Array.isArray(parsed.items) ||
+    parsed.items.length === 0
+  ) {
+    throw new Error("Groq returned no food items");
+  }
+
+  return parsed;
+}
+
+// ─── Main entry: try Gemini models, then Groq ────────────
+export async function parseWithAI(
+  voiceTranscript: string,
+  geminiApiKey: string,
+  groqApiKey?: string,
+): Promise<GeminiParseResponse> {
+  const errors: string[] = [];
+
+  // ── Try each Gemini model in order ─────────────────
+  for (const model of GEMINI_MODELS) {
+    try {
+      console.log(`[AI] Trying ${model}...`);
+      const result = await callGemini(voiceTranscript, geminiApiKey, model);
+      console.log(`[AI] ✅ Success with ${model}`);
+      return result;
+    } catch (error: any) {
+      const status = error?.status;
+      const message = error?.message ?? String(error);
+      errors.push(`${model}: ${message}`);
+      console.warn(`[AI] ❌ ${model} failed (status: ${status})`);
+
+      // Only fallback on rate limit (429) or server error (5xx)
+      // For other errors (400 bad request, etc), don't retry
+      if (status && status !== 429 && status < 500) {
+        throw error;
+      }
+
+      // Continue to next model
+    }
+  }
+
+  // ── Try Groq as final fallback ─────────────────────
+  if (groqApiKey) {
+    try {
+      console.log("[AI] Trying Groq (Llama 3.3 70B)...");
+      const result = await callGroq(voiceTranscript, groqApiKey);
+      console.log("[AI] ✅ Success with Groq");
+      return result;
+    } catch (error: any) {
+      errors.push(`groq: ${error?.message ?? String(error)}`);
+      console.warn("[AI] ❌ Groq failed");
+    }
+  }
+
+  // ── All models failed ─────────────────────────────
+  throw new Error(
+    `All AI models failed:\n${errors.map((e) => `  - ${e}`).join("\n")}`,
+  );
 }

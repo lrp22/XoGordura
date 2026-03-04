@@ -13,13 +13,7 @@ const dateString = z
 
 const mealTypeSchema = z.enum(["breakfast", "lunch", "dinner", "snack"]);
 const confidenceSchema = z.enum(["high", "medium", "low"]);
-const sourceSchema = z.enum([
-  "taco",
-  "fatsecret",
-  "nutritionix",
-  "web",
-  "ai_estimate",
-]);
+const sourceSchema = z.enum(["taco", "fatsecret", "web", "ai_estimate"]);
 
 const mealItemInput = z.object({
   name: z.string().min(1),

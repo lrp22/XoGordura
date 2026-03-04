@@ -34,7 +34,6 @@ function SourceDots({ sources }: { sources: string[] }) {
   const LABELS: Record<string, string> = {
     taco: "TACO",
     fatsecret: "FS",
-    nutritionix: "NX",
     web: "Web",
     ai_estimate: "IA",
   };
@@ -131,7 +130,7 @@ export default function LogMealConfirm() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // ✅ MOVED: Save mutation — must be called before any early return
+  // Save mutation
   const saveMutation = useMutation(
     orpc.meal.create.mutationOptions({
       onSuccess: async () => {
@@ -145,7 +144,6 @@ export default function LogMealConfirm() {
     }),
   );
 
-  // ✅ MOVED: handleSave — also before the early return
   function handleSave() {
     if (items.length === 0 || !analysisResult) return;
 
@@ -162,12 +160,7 @@ export default function LogMealConfirm() {
         proteinG: item.proteinG,
         carbsG: item.carbsG,
         fatG: item.fatG,
-        source: item.bestSource as
-          | "taco"
-          | "fatsecret"
-          | "nutritionix"
-          | "web"
-          | "ai_estimate",
+        source: item.bestSource as "taco" | "fatsecret" | "web" | "ai_estimate",
       })),
       totalCalories: Math.round(totals.calories),
       totalProteinG: +totals.proteinG.toFixed(1),
@@ -179,7 +172,7 @@ export default function LogMealConfirm() {
     });
   }
 
-  // ✅ Early return is now AFTER all hooks
+  // Early return AFTER all hooks
   if (!analysisResult) {
     return (
       <Container isScrollable={false}>
