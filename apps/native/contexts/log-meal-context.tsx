@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react";
 
-// ─── Types (mirrors API MealAnalysisResult) ──────────────
 export interface AnalyzedItem {
   name: string;
   portion: string;
@@ -15,6 +14,10 @@ export interface AnalyzedItem {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  fiberG: number;
+  sugarG: number;
+  netCarbsG: number;
+  glycemicLoad: "high" | "medium" | "low";
   confidence: "high" | "medium" | "low";
   sourcesUsed: string[];
   bestSource: string;
@@ -26,11 +29,13 @@ export interface AnalysisResult {
   totalProteinG: number;
   totalCarbsG: number;
   totalFatG: number;
+  totalFiberG: number;
+  totalSugarG: number;
+  totalNetCarbsG: number;
   overallConfidence: "high" | "medium" | "low";
   tip: string;
 }
 
-// ─── Context ─────────────────────────────────────────────
 interface LogMealContextType {
   mealType: string;
   voiceTranscript: string;

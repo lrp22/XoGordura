@@ -1,20 +1,23 @@
-// ─── Parsed food item from Gemini ────────────────────────
+// ─── Parsed food item from AI ────────────────────────────
 export interface ParsedFoodItem {
-  name: string; // "Arroz branco"
-  nameEn: string; // "cooked white rice" (for search)
-  portion: string; // "1 escumadeira média"
-  estimatedGrams: number; // 125
-  type: "basic" | "branded"; // basic = homemade, branded = packaged
+  name: string;
+  nameEn: string;
+  portion: string;
+  estimatedGrams: number;
+  type: "basic" | "branded";
   brand: string | null;
   aiEstimate: {
     calories: number;
     proteinG: number;
     carbsG: number;
     fatG: number;
+    fiberG: number;
+    sugarG: number;
+    glycemicLoad: "low" | "medium" | "high";
   };
 }
 
-// ─── Gemini parsing response ─────────────────────────────
+// ─── AI parsing response ─────────────────────────────────
 export interface GeminiParseResponse {
   items: ParsedFoodItem[];
   tip: string;
@@ -27,8 +30,10 @@ export interface NutritionSource {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  fiberG: number;
+  sugarG: number;
   portionG: number;
-  confidence: number; // 0.0 – 1.0
+  confidence: number;
 }
 
 // ─── Aggregated result for one food item ─────────────────
@@ -39,6 +44,10 @@ export interface FoodItemResult {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  fiberG: number;
+  sugarG: number;
+  netCarbsG: number;
+  glycemicLoad: "low" | "medium" | "high";
   confidence: "high" | "medium" | "low";
   sourcesUsed: string[];
   bestSource: string;
@@ -51,15 +60,18 @@ export interface MealAnalysisResult {
   totalProteinG: number;
   totalCarbsG: number;
   totalFatG: number;
+  totalFiberG: number;
+  totalSugarG: number;
+  totalNetCarbsG: number;
   overallConfidence: "high" | "medium" | "low";
   tip: string;
 }
 
 // ─── TACO food entry (per 100g) ──────────────────────────
 export interface TacoFood {
-  name: string; // "Arroz, tipo 1, cozido"
-  normalized: string; // "arroz tipo 1 cozido"
-  category: string; // "cereais"
+  name: string;
+  normalized: string;
+  category: string;
   kcal: number;
   proteinG: number;
   carbsG: number;

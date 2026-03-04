@@ -12,11 +12,13 @@ import { getLocalToday, getMealTypeEmoji, getMealTypeLabel } from "@/lib/date";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
-// ─── Macro colors ────────────────────────────────────────
 const MACRO_COLORS = {
-  protein: "#3B82F6", // blue
-  fat: "#F59E0B", // amber
-  carbs: "#8B5CF6", // purple
+  protein: "#3B82F6",
+  fat: "#F59E0B",
+  carbs: "#8B5CF6",
+  sugar: "#E53935",
+  fiber: "#4CAF50",
+  netCarbs: "#EC4899",
 };
 
 export default function HomeScreen() {
@@ -31,25 +33,29 @@ export default function HomeScreen() {
   );
 
   const profile = profileQuery.data;
+  const isDiabetic = profile?.hasDiabetes ?? false;
   const meals = mealsQuery.data ?? [];
 
-  // ── Consumed totals ────────────────────────────────
   const consumed = meals.reduce(
     (acc, m) => ({
       calories: acc.calories + m.totalCalories,
       protein: acc.protein + m.totalProteinG,
       fat: acc.fat + m.totalFatG,
       carbs: acc.carbs + m.totalCarbsG,
+      fiber: acc.fiber + m.totalFiberG,
+      sugar: acc.sugar + m.totalSugarG,
     }),
-    { calories: 0, protein: 0, fat: 0, carbs: 0 },
+    { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0 },
   );
 
-  // ── Goals ──────────────────────────────────────────
+  const netCarbs = Math.max(0, consumed.carbs - consumed.fiber);
+
   const goals = {
     calories: profile?.dailyCalorieGoal ?? 1500,
     protein: profile?.dailyProteinGoal ?? 100,
     fat: profile?.dailyFatGoal ?? 50,
     carbs: profile?.dailyCarbsGoal ?? 150,
+    sugar: profile?.dailySugarLimitG ?? (isDiabetic ? 25 : 50),
   };
 
   function handleAddMeal() {
@@ -71,11 +77,7 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <Container
-        scrollViewProps={{
-          showsVerticalScrollIndicator: false,
-        }}
-      >
+      <Container scrollViewProps={{ showsVerticalScrollIndicator: false }}>
         <View className="px-6 pt-4 pb-32 gap-6">
           {/* ── Greeting ────────────────────────── */}
           <View>
@@ -120,6 +122,61 @@ export default function HomeScreen() {
               color={MACRO_COLORS.carbs}
             />
           </View>
+
+          {/* ── Diabetes-specific rings ──────────── */}
+          {isDiabetic && (
+            <View>
+              <View className="flex-row items-center gap-2 mb-3">
+                <Text className="text-foreground text-lg font-bold">
+                  Controle Glicêmico
+                </Text>
+                <Text className="text-lg">🩺</Text>
+              </View>
+              <View className="flex-row justify-around px-2">
+                <MacroRing
+                  label="Açúcar"
+                  emoji="🍬"
+                  consumed={consumed.sugar}
+                  goal={goals.sugar}
+                  color={MACRO_COLORS.sugar}
+                />
+                <MacroRing
+                  label="Fibra"
+                  emoji="🥬"
+                  consumed={consumed.fiber}
+                  goal={25}
+                  color={MACRO_COLORS.fiber}
+                />
+                <MacroRing
+                  label="Carb Líq."
+                  emoji="📊"
+                  consumed={netCarbs}
+                  goal={Math.max(0, goals.carbs - 25)}
+                  color={MACRO_COLORS.netCarbs}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* ── Sugar warning (diabetic) ─────────── */}
+          {isDiabetic && consumed.sugar > goals.sugar && (
+            <Surface
+              variant="secondary"
+              className="p-4 rounded-xl flex-row items-center gap-3"
+              style={{ borderWidth: 1, borderColor: "#E53935" }}
+            >
+              <Text className="text-2xl">⚠️</Text>
+              <View className="flex-1">
+                <Text className="text-danger text-sm font-bold">
+                  Limite de açúcar excedido
+                </Text>
+                <Text className="text-muted text-xs">
+                  Consumo: {consumed.sugar.toFixed(1)}g / Meta: {goals.sugar}g.
+                  Considere alimentos com menor índice glicêmico.
+                </Text>
+              </View>
+            </Surface>
+          )}
 
           {/* ── Today's meals ───────────────────── */}
           <View>
@@ -177,7 +234,6 @@ export default function HomeScreen() {
                           </Text>
                         </View>
                       </View>
-
                       <View className="items-end">
                         <Text className="text-foreground text-xl font-bold">
                           {meal.totalCalories}
@@ -186,8 +242,8 @@ export default function HomeScreen() {
                       </View>
                     </View>
 
-                    {/* Macros with colored dots */}
-                    <View className="flex-row gap-4 mt-3 pt-3 border-t border-muted/20">
+                    {/* Macros row */}
+                    <View className="flex-row gap-3 mt-3 pt-3 border-t border-muted/20 flex-wrap">
                       <View className="flex-row items-center gap-1">
                         <View
                           className="w-2 h-2 rounded-full"
@@ -215,7 +271,29 @@ export default function HomeScreen() {
                           G: {meal.totalFatG.toFixed(1)}g
                         </Text>
                       </View>
-                      {meal.aiTip && (
+                      {isDiabetic && (
+                        <>
+                          <View className="flex-row items-center gap-1">
+                            <View
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: MACRO_COLORS.sugar }}
+                            />
+                            <Text className="text-muted text-xs">
+                              Aç: {meal.totalSugarG.toFixed(1)}g
+                            </Text>
+                          </View>
+                          <View className="flex-row items-center gap-1">
+                            <View
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: MACRO_COLORS.fiber }}
+                            />
+                            <Text className="text-muted text-xs">
+                              Fi: {meal.totalFiberG.toFixed(1)}g
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                      {meal.aiTip && !isDiabetic && (
                         <Text
                           className="text-muted text-xs flex-1 text-right"
                           numberOfLines={1}
@@ -227,7 +305,6 @@ export default function HomeScreen() {
                   </Card>
                 ))}
 
-                {/* Add another meal inline */}
                 <Pressable
                   onPress={handleAddMeal}
                   className="active:opacity-70"
@@ -252,7 +329,7 @@ export default function HomeScreen() {
         </View>
       </Container>
 
-      {/* ═══ Floating Action Button — OUTSIDE ScrollView ═══ */}
+      {/* ═══ FAB ═══ */}
       <View
         className="absolute bottom-6 right-6"
         style={{

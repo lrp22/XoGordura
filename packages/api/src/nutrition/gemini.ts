@@ -1,7 +1,5 @@
 import type { GeminiParseResponse } from "./types";
 
-// ─── Model fallback chain ────────────────────────────────
-// If the primary model hits rate limits (429), we try the next one.
 const GEMINI_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.0-flash",
@@ -19,11 +17,15 @@ REGRAS:
 3. Estime a porção em gramas baseado na descrição ou porções brasileiras típicas
 4. Classifique: "basic" para comida caseira/in natura, "branded" para produtos industrializados
 5. Forneça o nome em inglês (para busca em bancos internacionais)
-6. Forneça uma estimativa calórica para cada item (será usada como fallback)
-7. Gere uma dica curta e ENCORAJADORA sobre a refeição (max 1 frase)
-8. Na dúvida sobre porção, assuma porção MÉDIA brasileira
-9. Café com açúcar = 2 itens separados (café + açúcar)
-10. Se mencionar "com salada", inclua os vegetais que são típicos (alface, tomate)
+6. Forneça estimativa calórica, proteína, carbos, gordura, FIBRA e AÇÚCAR para cada item
+7. Classifique a CARGA GLICÊMICA de cada item: "low", "medium" ou "high"
+   - low: IG < 55 ou porção pequena de carboidrato (vegetais, legumes, nozes)
+   - medium: IG 55-69 ou porção moderada (arroz integral, pão integral, frutas)
+   - high: IG >= 70 ou porção grande de carboidrato refinado (arroz branco, pão branco, açúcar, suco)
+8. Gere uma dica curta e ENCORAJADORA sobre a refeição (max 1 frase)
+9. Na dúvida sobre porção, assuma porção MÉDIA brasileira
+10. Café com açúcar = 2 itens separados (café + açúcar)
+11. Se mencionar "com salada", inclua os vegetais típicos (alface, tomate)
 
 IMPORTANTE: Responda APENAS com JSON válido, sem markdown.
 
@@ -41,7 +43,10 @@ FORMATO:
         "calories": 160,
         "proteinG": 3.1,
         "carbsG": 35.1,
-        "fatG": 0.3
+        "fatG": 0.3,
+        "fiberG": 0.4,
+        "sugarG": 0.1,
+        "glycemicLoad": "high"
       }
     }
   ],
@@ -107,7 +112,7 @@ async function callGemini(
   return parsed;
 }
 
-// ─── Call Groq (Llama) as final fallback ─────────────────
+// ─── Call Groq as final fallback ─────────────────────────
 async function callGroq(
   voiceTranscript: string,
   apiKey: string,
@@ -170,7 +175,6 @@ export async function parseWithAI(
 ): Promise<GeminiParseResponse> {
   const errors: string[] = [];
 
-  // ── Try each Gemini model in order ─────────────────
   for (const model of GEMINI_MODELS) {
     try {
       console.log(`[AI] Trying ${model}...`);
@@ -183,17 +187,12 @@ export async function parseWithAI(
       errors.push(`${model}: ${message}`);
       console.warn(`[AI] ❌ ${model} failed (status: ${status})`);
 
-      // Only fallback on rate limit (429) or server error (5xx)
-      // For other errors (400 bad request, etc), don't retry
       if (status && status !== 429 && status < 500) {
         throw error;
       }
-
-      // Continue to next model
     }
   }
 
-  // ── Try Groq as final fallback ─────────────────────
   if (groqApiKey) {
     try {
       console.log("[AI] Trying Groq (Llama 3.3 70B)...");
@@ -206,7 +205,6 @@ export async function parseWithAI(
     }
   }
 
-  // ── All models failed ─────────────────────────────
   throw new Error(
     `All AI models failed:\n${errors.map((e) => `  - ${e}`).join("\n")}`,
   );

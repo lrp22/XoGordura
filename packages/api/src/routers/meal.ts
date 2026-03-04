@@ -14,6 +14,7 @@ const dateString = z
 const mealTypeSchema = z.enum(["breakfast", "lunch", "dinner", "snack"]);
 const confidenceSchema = z.enum(["high", "medium", "low"]);
 const sourceSchema = z.enum(["taco", "fatsecret", "web", "ai_estimate"]);
+const glycemicLoadSchema = z.enum(["low", "medium", "high"]).optional();
 
 const mealItemInput = z.object({
   name: z.string().min(1),
@@ -22,11 +23,13 @@ const mealItemInput = z.object({
   proteinG: z.number().min(0),
   carbsG: z.number().min(0),
   fatG: z.number().min(0),
+  fiberG: z.number().min(0).optional().default(0),
+  sugarG: z.number().min(0).optional().default(0),
+  glycemicLoad: glycemicLoadSchema,
   source: sourceSchema.optional().default("ai_estimate"),
 });
 
 export const mealRouter = {
-  // ─── AI meal analysis (Step 2 — the core feature) ─
   analyze: protectedProcedure
     .input(
       z.object({
@@ -47,7 +50,6 @@ export const mealRouter = {
       }
     }),
 
-  // ─── Get all meals for a specific date ────────────
   getByDate: protectedProcedure
     .input(z.object({ date: dateString }))
     .handler(async ({ input, context }) => {
@@ -61,7 +63,6 @@ export const mealRouter = {
       });
     }),
 
-  // ─── Get single meal by ID ────────────────────────
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .handler(async ({ input, context }) => {
@@ -82,7 +83,6 @@ export const mealRouter = {
       return result;
     }),
 
-  // ─── Create meal with items (after confirm) ───────
   create: protectedProcedure
     .input(
       z.object({
@@ -94,6 +94,8 @@ export const mealRouter = {
         totalProteinG: z.number().min(0),
         totalCarbsG: z.number().min(0),
         totalFatG: z.number().min(0),
+        totalFiberG: z.number().min(0).optional().default(0),
+        totalSugarG: z.number().min(0).optional().default(0),
         confidence: confidenceSchema.optional().default("medium"),
         aiTip: z.string().optional(),
         aiRawResponse: z.string().optional(),
@@ -113,6 +115,8 @@ export const mealRouter = {
           totalProteinG: input.totalProteinG,
           totalCarbsG: input.totalCarbsG,
           totalFatG: input.totalFatG,
+          totalFiberG: input.totalFiberG,
+          totalSugarG: input.totalSugarG,
           confidence: input.confidence,
           aiTip: input.aiTip,
           aiRawResponse: input.aiRawResponse,
@@ -135,6 +139,9 @@ export const mealRouter = {
           proteinG: item.proteinG,
           carbsG: item.carbsG,
           fatG: item.fatG,
+          fiberG: item.fiberG,
+          sugarG: item.sugarG,
+          glycemicLoad: item.glycemicLoad,
           source: item.source,
         })),
       );
@@ -145,7 +152,6 @@ export const mealRouter = {
       });
     }),
 
-  // ─── Delete a meal ────────────────────────────────
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .handler(async ({ input, context }) => {

@@ -12,8 +12,14 @@ const activityLevelSchema = z.enum([
   "active",
 ]);
 
+const diabetesTypeSchema = z.enum([
+  "type1",
+  "type2",
+  "gestational",
+  "prediabetes",
+]);
+
 export const profileRouter = {
-  // ─── Get profile (returns null if not set up) ─────
   get: protectedProcedure.handler(async ({ context }) => {
     const result = await db.query.userProfile.findFirst({
       where: eq(userProfile.userId, context.session.user.id),
@@ -22,7 +28,6 @@ export const profileRouter = {
     return result ?? null;
   }),
 
-  // ─── Create or update profile ─────────────────────
   upsert: protectedProcedure
     .input(
       z.object({
@@ -35,7 +40,16 @@ export const profileRouter = {
         dailyProteinGoal: z.number().int().min(0).optional(),
         dailyCarbsGoal: z.number().int().min(0).optional(),
         dailyFatGoal: z.number().int().min(0).optional(),
+        dailySugarLimitG: z
+          .number()
+          .int()
+          .min(0)
+          .max(200)
+          .optional()
+          .nullable(),
         activityLevel: activityLevelSchema.optional(),
+        hasDiabetes: z.boolean().optional(),
+        diabetesType: diabetesTypeSchema.optional().nullable(),
       }),
     )
     .handler(async ({ input, context }) => {
@@ -54,7 +68,10 @@ export const profileRouter = {
           dailyProteinGoal: input.dailyProteinGoal,
           dailyCarbsGoal: input.dailyCarbsGoal,
           dailyFatGoal: input.dailyFatGoal,
+          dailySugarLimitG: input.dailySugarLimitG,
           activityLevel: input.activityLevel,
+          hasDiabetes: input.hasDiabetes,
+          diabetesType: input.diabetesType,
         })
         .onConflictDoUpdate({
           target: userProfile.userId,
@@ -82,8 +99,17 @@ export const profileRouter = {
             ...(input.dailyFatGoal !== undefined && {
               dailyFatGoal: input.dailyFatGoal,
             }),
+            ...(input.dailySugarLimitG !== undefined && {
+              dailySugarLimitG: input.dailySugarLimitG,
+            }),
             ...(input.activityLevel !== undefined && {
               activityLevel: input.activityLevel,
+            }),
+            ...(input.hasDiabetes !== undefined && {
+              hasDiabetes: input.hasDiabetes,
+            }),
+            ...(input.diabetesType !== undefined && {
+              diabetesType: input.diabetesType,
             }),
           },
         })

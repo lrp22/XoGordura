@@ -79,6 +79,9 @@ export default function OnboardingActivity() {
       dailyCarbsGoal: results.carbs,
       dailyFatGoal: results.fat,
       activityLevel: data.activityLevel,
+      hasDiabetes: data.hasDiabetes,
+      diabetesType: data.diabetesType,
+      dailySugarLimitG: data.dailySugarLimitG,
     });
     await saveWeight.mutateAsync({
       date: today,
@@ -141,14 +144,20 @@ export default function OnboardingActivity() {
           <Text className="text-foreground text-xl font-bold mb-1">
             Distribuição de Macros 🥩🥑🍚
           </Text>
-          <Text className="text-muted text-sm mb-4">
+          <Text className="text-muted text-sm mb-1">
             Proteína / Gordura / Carboidratos
           </Text>
+          {data.hasDiabetes && (
+            <Text className="text-warning text-xs mb-3">
+              ⚠️ Recomendamos Low Carb para diabéticos
+            </Text>
+          )}
 
           <View className="gap-3 mb-8">
             {PRESET_KEYS.map((key) => {
               const preset = MACRO_PRESETS[key];
               const isSelected = data.macroPreset === key;
+              const isRecommended = data.hasDiabetes && key === "lower_carb";
               const previewMacros = calcGoals(
                 data.currentWeightKg,
                 data.heightCm,
@@ -175,11 +184,20 @@ export default function OnboardingActivity() {
                     }
                   >
                     <View className="flex-row items-center justify-between mb-2">
-                      <Text
-                        className={`text-base font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
-                      >
-                        {preset.label}
-                      </Text>
+                      <View className="flex-row items-center gap-2">
+                        <Text
+                          className={`text-base font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
+                        >
+                          {preset.label}
+                        </Text>
+                        {isRecommended && (
+                          <View className="bg-success/20 px-2 py-0.5 rounded">
+                            <Text className="text-success text-xs font-semibold">
+                              Recomendado
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                       <View className="bg-muted/30 px-2 py-0.5 rounded">
                         <Text className="text-muted text-xs font-semibold">
                           {preset.tag}
@@ -247,11 +265,13 @@ export default function OnboardingActivity() {
                 <Text className="text-muted text-xs">Carbos</Text>
               </View>
             </View>
-            <View className="pt-3 border-t border-muted/20">
-              <Text className="text-muted text-center text-xs">
-                BMR: {results.bmr} | TDEE: {results.tdee}
-              </Text>
-            </View>
+            {data.hasDiabetes && data.dailySugarLimitG && (
+              <View className="pt-3 border-t border-muted/20">
+                <Text className="text-warning text-xs text-center">
+                  🩺 Limite de açúcar: {data.dailySugarLimitG}g/dia
+                </Text>
+              </View>
+            )}
           </Surface>
         </View>
 

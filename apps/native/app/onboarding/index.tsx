@@ -1,14 +1,13 @@
 import { useRouter } from "expo-router";
 import { Button, Surface, useThemeColor } from "heroui-native";
 import { Text, View, Pressable } from "react-native";
+
 import { Container } from "@/components/container";
 import { NumberStepper } from "@/components/number-stepper";
 import { useOnboarding } from "@/contexts/onboarding-context";
-import { authClient } from "@/lib/auth-client";
 
 export default function OnboardingWelcome() {
   const router = useRouter();
-  const { data: session } = authClient.useSession();
   const { data, update } = useOnboarding();
   const primaryColor = useThemeColor("accent");
 
@@ -17,7 +16,7 @@ export default function OnboardingWelcome() {
       <View className="flex-1 px-6 pt-16 pb-8 justify-between">
         <View>
           <Text className="text-foreground text-3xl font-bold mb-2">
-            Bem-vindo!
+            Bem-vindo! 👋
           </Text>
           <Text className="text-muted text-lg mb-8">
             Vamos definir seu perfil biológico.
@@ -37,7 +36,7 @@ export default function OnboardingWelcome() {
                   style={
                     data.gender === g
                       ? { borderWidth: 2, borderColor: primaryColor }
-                      : {}
+                      : { borderWidth: 2, borderColor: "transparent" }
                   }
                 >
                   <Text
@@ -64,7 +63,7 @@ export default function OnboardingWelcome() {
         <Button
           size="lg"
           className="h-16"
-          onPress={() => router.push("/onboarding/body")}
+          onPress={() => router.push("/onboarding/health" as any)}
         >
           <Button.Label className="text-lg">Próximo →</Button.Label>
         </Button>

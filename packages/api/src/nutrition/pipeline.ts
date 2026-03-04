@@ -9,7 +9,6 @@ import type {
   ParsedFoodItem,
 } from "./types";
 
-// ─── Config from environment ─────────────────────────────
 interface PipelineConfig {
   geminiApiKey: string;
   groqApiKey?: string;
@@ -31,14 +30,15 @@ function getConfig(): PipelineConfig {
   };
 }
 
-// ─── Look up a single food item across all sources ───────
 async function lookupFoodItem(
   item: ParsedFoodItem,
   config: PipelineConfig,
-): Promise<NutritionSource[]> {
+): Promise<{
+  sources: NutritionSource[];
+  glycemicLoad: "low" | "medium" | "high";
+}> {
   const sources: NutritionSource[] = [];
 
-  // Resolve portion to grams
   const portionG = resolvePortionGrams(
     item.name,
     item.portion,
@@ -51,11 +51,20 @@ async function lookupFoodItem(
     if (tacoResults.length > 0) {
       const best = tacoResults[0]!;
       const scaled = scaleTaco(best, portionG);
+
+      // TACO has fiberG on the raw entry (per 100g), scale it manually
+      const fiberScaled = ((best.fiberG ?? 0) * portionG) / 100;
+
       sources.push(
         assignConfidence(
           {
             source: "taco",
-            ...scaled,
+            calories: scaled.calories,
+            proteinG: scaled.proteinG,
+            carbsG: scaled.carbsG,
+            fatG: scaled.fatG,
+            fiberG: +fiberScaled.toFixed(1),
+            sugarG: 0, // TACO doesn't have sugar breakdown
             portionG,
             confidence: 0,
           },
@@ -75,7 +84,16 @@ async function lookupFoodItem(
       config.fatSecretClientSecret,
     );
     if (result) {
-      sources.push(assignConfidence(result, item.type));
+      sources.push(
+        assignConfidence(
+          {
+            ...result,
+            fiberG: (result as any).fiberG ?? 0,
+            sugarG: (result as any).sugarG ?? 0,
+          },
+          item.type,
+        ),
+      );
     }
   }
 
@@ -88,6 +106,8 @@ async function lookupFoodItem(
         proteinG: item.aiEstimate.proteinG,
         carbsG: item.aiEstimate.carbsG,
         fatG: item.aiEstimate.fatG,
+        fiberG: item.aiEstimate.fiberG ?? 0,
+        sugarG: item.aiEstimate.sugarG ?? 0,
         portionG,
         confidence: 0,
       },
@@ -95,27 +115,34 @@ async function lookupFoodItem(
     ),
   );
 
-  return sources;
+  return {
+    sources,
+    glycemicLoad: item.aiEstimate.glycemicLoad ?? "medium",
+  };
 }
 
-// ─── Main pipeline entry point ───────────────────────────
 export async function analyzeMeal(
   voiceTranscript: string,
 ): Promise<MealAnalysisResult> {
   const config = getConfig();
 
-  // ═══ STEP 1: Parse with AI (Gemini → Groq fallback) ═══
+  // ═══ STEP 1: Parse with AI ═══
   const parsed = await parseWithAI(
     voiceTranscript,
     config.geminiApiKey,
     config.groqApiKey,
   );
 
-  // ═══ STEP 2: Look up each item across all sources ═══
+  // ═══ STEP 2: Look up each item ═══
   const itemResults = await Promise.all(
     parsed.items.map(async (item) => {
-      const sources = await lookupFoodItem(item, config);
-      return computeWeightedAverage(sources, item.name, item.portion);
+      const { sources, glycemicLoad } = await lookupFoodItem(item, config);
+      return computeWeightedAverage(
+        sources,
+        item.name,
+        item.portion,
+        glycemicLoad,
+      );
     }),
   );
 
@@ -126,8 +153,17 @@ export async function analyzeMeal(
       totalProteinG: acc.totalProteinG + item.proteinG,
       totalCarbsG: acc.totalCarbsG + item.carbsG,
       totalFatG: acc.totalFatG + item.fatG,
+      totalFiberG: acc.totalFiberG + item.fiberG,
+      totalSugarG: acc.totalSugarG + item.sugarG,
     }),
-    { totalCalories: 0, totalProteinG: 0, totalCarbsG: 0, totalFatG: 0 },
+    {
+      totalCalories: 0,
+      totalProteinG: 0,
+      totalCarbsG: 0,
+      totalFatG: 0,
+      totalFiberG: 0,
+      totalSugarG: 0,
+    },
   );
 
   // ═══ STEP 4: Overall confidence ═══
@@ -144,12 +180,17 @@ export async function analyzeMeal(
     overallConfidence = "high";
   }
 
+  const totalNetCarbsG = Math.max(0, totals.totalCarbsG - totals.totalFiberG);
+
   return {
     items: itemResults,
     totalCalories: Math.round(totals.totalCalories),
     totalProteinG: +totals.totalProteinG.toFixed(1),
     totalCarbsG: +totals.totalCarbsG.toFixed(1),
     totalFatG: +totals.totalFatG.toFixed(1),
+    totalFiberG: +totals.totalFiberG.toFixed(1),
+    totalSugarG: +totals.totalSugarG.toFixed(1),
+    totalNetCarbsG: +totalNetCarbsG.toFixed(1),
     overallConfidence,
     tip: parsed.tip,
   };

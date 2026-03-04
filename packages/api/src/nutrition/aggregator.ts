@@ -1,6 +1,5 @@
 import type { FoodItemResult, NutritionSource } from "./types";
 
-// ─── Confidence weights by source and food type ──────────
 const SOURCE_CONFIDENCE = {
   basic: {
     taco: 0.95,
@@ -16,7 +15,6 @@ const SOURCE_CONFIDENCE = {
   },
 } as const;
 
-// ─── Assign confidence based on source + food type ───────
 export function assignConfidence(
   source: NutritionSource,
   foodType: "basic" | "branded",
@@ -27,13 +25,12 @@ export function assignConfidence(
   };
 }
 
-// ─── Compute weighted average across sources ─────────────
 export function computeWeightedAverage(
   sources: NutritionSource[],
   foodName: string,
   portion: string,
+  glycemicLoad: "low" | "medium" | "high",
 ): FoodItemResult {
-  // Filter out zero-confidence sources
   const validSources = sources.filter((s) => s.confidence > 0);
 
   if (validSources.length === 0) {
@@ -44,6 +41,10 @@ export function computeWeightedAverage(
       proteinG: 0,
       carbsG: 0,
       fatG: 0,
+      fiberG: 0,
+      sugarG: 0,
+      netCarbsG: 0,
+      glycemicLoad,
       confidence: "low",
       sourcesUsed: [],
       bestSource: "none",
@@ -56,6 +57,8 @@ export function computeWeightedAverage(
   let proteinG = 0;
   let carbsG = 0;
   let fatG = 0;
+  let fiberG = 0;
+  let sugarG = 0;
 
   for (const s of validSources) {
     const w = s.confidence / totalWeight;
@@ -63,9 +66,12 @@ export function computeWeightedAverage(
     proteinG += s.proteinG * w;
     carbsG += s.carbsG * w;
     fatG += s.fatG * w;
+    fiberG += s.fiberG * w;
+    sugarG += s.sugarG * w;
   }
 
-  // ── Determine confidence level based on source agreement ──
+  const netCarbsG = Math.max(0, carbsG - fiberG);
+
   const calValues = validSources.map((s) => s.calories);
   const maxCal = Math.max(...calValues);
   const minCal = Math.min(...calValues);
@@ -83,7 +89,6 @@ export function computeWeightedAverage(
     confidence = "medium";
   }
 
-  // Best source = highest confidence
   const bestSource = validSources.sort(
     (a, b) => b.confidence - a.confidence,
   )[0]!.source;
@@ -95,6 +100,10 @@ export function computeWeightedAverage(
     proteinG: +proteinG.toFixed(1),
     carbsG: +carbsG.toFixed(1),
     fatG: +fatG.toFixed(1),
+    fiberG: +fiberG.toFixed(1),
+    sugarG: +sugarG.toFixed(1),
+    netCarbsG: +netCarbsG.toFixed(1),
+    glycemicLoad,
     confidence,
     sourcesUsed: validSources.map((s) => s.source),
     bestSource,

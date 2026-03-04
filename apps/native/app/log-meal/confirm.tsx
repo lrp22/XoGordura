@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Button, Spinner, Surface, useThemeColor } from "heroui-native";
@@ -7,6 +7,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 
 import { Container } from "@/components/container";
+import { GlycemicBadge } from "@/components/glycemic-badge";
 import { type AnalyzedItem, useLogMeal } from "@/contexts/log-meal-context";
 import { getLocalToday, getMealTypeLabel } from "@/lib/date";
 import { queryClient, orpc } from "@/utils/orpc";
@@ -19,7 +20,6 @@ function ConfidenceBadge({ level }: { level: string }) {
     low: { bg: "bg-danger/20", text: "text-danger", label: "Baixa" },
   };
   const c = colors[level] ?? colors.medium;
-
   return (
     <View className={`${c.bg} px-3 py-1 rounded-full`}>
       <Text className={`${c.text} text-xs font-semibold`}>
@@ -29,7 +29,7 @@ function ConfidenceBadge({ level }: { level: string }) {
   );
 }
 
-// ─── Source indicator dots ───────────────────────────────
+// ─── Source dots ─────────────────────────────────────────
 function SourceDots({ sources }: { sources: string[] }) {
   const LABELS: Record<string, string> = {
     taco: "TACO",
@@ -37,7 +37,6 @@ function SourceDots({ sources }: { sources: string[] }) {
     web: "Web",
     ai_estimate: "IA",
   };
-
   return (
     <View className="flex-row gap-1 flex-wrap">
       {sources.map((source) => (
@@ -53,9 +52,11 @@ function SourceDots({ sources }: { sources: string[] }) {
 function FoodItemCard({
   item,
   onRemove,
+  showDiabetesInfo,
 }: {
   item: AnalyzedItem;
   onRemove: () => void;
+  showDiabetesInfo: boolean;
 }) {
   const dangerColor = useThemeColor("danger");
 
@@ -63,15 +64,19 @@ function FoodItemCard({
     <Surface variant="secondary" className="p-4 rounded-xl">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Text className="text-foreground text-lg font-semibold">
-            {item.name}
-          </Text>
+          <View className="flex-row items-center gap-2 flex-wrap">
+            <Text className="text-foreground text-lg font-semibold">
+              {item.name}
+            </Text>
+            {showDiabetesInfo && (
+              <GlycemicBadge level={item.glycemicLoad} compact />
+            )}
+          </View>
           <Text className="text-muted text-sm mt-0.5">{item.portion}</Text>
           <View className="mt-2">
             <SourceDots sources={item.sourcesUsed} />
           </View>
         </View>
-
         <View className="items-end gap-2">
           <Text className="text-foreground text-xl font-bold">
             {item.calories}
@@ -88,12 +93,25 @@ function FoodItemCard({
       </View>
 
       {/* Macros row */}
-      <View className="flex-row gap-4 mt-3 pt-3 border-t border-muted/20">
+      <View className="flex-row gap-3 mt-3 pt-3 border-t border-muted/20 flex-wrap">
         <Text className="text-muted text-xs">
           P: {item.proteinG.toFixed(1)}g
         </Text>
         <Text className="text-muted text-xs">C: {item.carbsG.toFixed(1)}g</Text>
         <Text className="text-muted text-xs">G: {item.fatG.toFixed(1)}g</Text>
+        {showDiabetesInfo && (
+          <>
+            <Text className="text-muted text-xs">
+              Fi: {item.fiberG.toFixed(1)}g
+            </Text>
+            <Text className="text-muted text-xs">
+              Aç: {item.sugarG.toFixed(1)}g
+            </Text>
+            <Text className="text-muted text-xs font-semibold">
+              Net: {item.netCarbsG.toFixed(1)}g
+            </Text>
+          </>
+        )}
       </View>
     </Surface>
   );
@@ -103,13 +121,13 @@ function FoodItemCard({
 export default function LogMealConfirm() {
   const router = useRouter();
   const { mealType, voiceTranscript, analysisResult, reset } = useLogMeal();
+  const profileQuery = useQuery(orpc.profile.get.queryOptions());
+  const isDiabetic = profileQuery.data?.hasDiabetes ?? false;
 
-  // Local state for editable items
   const [items, setItems] = useState<AnalyzedItem[]>(
     () => analysisResult?.items ?? [],
   );
 
-  // Recalculate totals from remaining items
   const totals = useMemo(() => {
     return items.reduce(
       (acc, item) => ({
@@ -117,12 +135,15 @@ export default function LogMealConfirm() {
         proteinG: acc.proteinG + item.proteinG,
         carbsG: acc.carbsG + item.carbsG,
         fatG: acc.fatG + item.fatG,
+        fiberG: acc.fiberG + item.fiberG,
+        sugarG: acc.sugarG + item.sugarG,
       }),
-      { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 },
+      { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0 },
     );
   }, [items]);
 
-  // Remove item handler
+  const netCarbsG = Math.max(0, totals.carbsG - totals.fiberG);
+
   const handleRemoveItem = useCallback((index: number) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -130,7 +151,6 @@ export default function LogMealConfirm() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // Save mutation
   const saveMutation = useMutation(
     orpc.meal.create.mutationOptions({
       onSuccess: async () => {
@@ -146,7 +166,6 @@ export default function LogMealConfirm() {
 
   function handleSave() {
     if (items.length === 0 || !analysisResult) return;
-
     const today = getLocalToday();
 
     saveMutation.mutate({
@@ -160,19 +179,23 @@ export default function LogMealConfirm() {
         proteinG: item.proteinG,
         carbsG: item.carbsG,
         fatG: item.fatG,
+        fiberG: item.fiberG,
+        sugarG: item.sugarG,
+        glycemicLoad: item.glycemicLoad,
         source: item.bestSource as "taco" | "fatsecret" | "web" | "ai_estimate",
       })),
       totalCalories: Math.round(totals.calories),
       totalProteinG: +totals.proteinG.toFixed(1),
       totalCarbsG: +totals.carbsG.toFixed(1),
       totalFatG: +totals.fatG.toFixed(1),
+      totalFiberG: +totals.fiberG.toFixed(1),
+      totalSugarG: +totals.sugarG.toFixed(1),
       confidence: analysisResult.overallConfidence,
       aiTip: analysisResult.tip,
       aiRawResponse: JSON.stringify(analysisResult),
     });
   }
 
-  // Early return AFTER all hooks
   if (!analysisResult) {
     return (
       <Container isScrollable={false}>
@@ -188,10 +211,15 @@ export default function LogMealConfirm() {
     );
   }
 
+  // ── Check for high-glycemic items (diabetic warning) ──
+  const highGIItems = isDiabetic
+    ? items.filter((i) => i.glycemicLoad === "high")
+    : [];
+
   return (
     <Container>
       <View className="px-6 pt-4 pb-8 gap-5">
-        {/* ── Header ──────────────────────────── */}
+        {/* Header */}
         <View className="flex-row items-center justify-between">
           <View>
             <Text className="text-foreground text-2xl font-bold">
@@ -205,7 +233,7 @@ export default function LogMealConfirm() {
           <ConfidenceBadge level={analysisResult.overallConfidence} />
         </View>
 
-        {/* ── AI Tip ──────────────────────────── */}
+        {/* AI Tip */}
         {analysisResult.tip && (
           <Surface
             variant="secondary"
@@ -218,13 +246,36 @@ export default function LogMealConfirm() {
           </Surface>
         )}
 
-        {/* ── Food items ──────────────────────── */}
+        {/* Diabetic warning for high-GI foods */}
+        {highGIItems.length > 0 && (
+          <Surface
+            variant="secondary"
+            className="p-4 rounded-xl flex-row items-start gap-3"
+            style={{ borderWidth: 1, borderColor: "#E53935" }}
+          >
+            <Text className="text-2xl">🩺</Text>
+            <View className="flex-1">
+              <Text className="text-danger text-sm font-bold mb-1">
+                Atenção — Índice glicêmico alto
+              </Text>
+              <Text className="text-muted text-xs">
+                {highGIItems.map((i) => i.name).join(", ")}{" "}
+                {highGIItems.length === 1 ? "pode causar" : "podem causar"}{" "}
+                picos de glicose. Considere trocar por versões integrais ou
+                combinar com fibras.
+              </Text>
+            </View>
+          </Surface>
+        )}
+
+        {/* Food items */}
         <View className="gap-3">
           {items.map((item, index) => (
             <FoodItemCard
               key={`${item.name}-${index}`}
               item={item}
               onRemove={() => handleRemoveItem(index)}
+              showDiabetesInfo={isDiabetic}
             />
           ))}
         </View>
@@ -241,7 +292,7 @@ export default function LogMealConfirm() {
           </Surface>
         )}
 
-        {/* ── Totals ──────────────────────────── */}
+        {/* Totals */}
         {items.length > 0 && (
           <Surface
             variant="secondary"
@@ -274,17 +325,41 @@ export default function LogMealConfirm() {
                 <Text className="text-muted text-xs">Gordura</Text>
               </View>
             </View>
+
+            {/* Diabetes-specific totals */}
+            {isDiabetic && (
+              <View className="flex-row justify-around mt-3 pt-3 border-t border-muted/20">
+                <View className="items-center">
+                  <Text className="text-foreground text-base font-semibold">
+                    {totals.sugarG.toFixed(1)}g
+                  </Text>
+                  <Text className="text-muted text-xs">Açúcar</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-foreground text-base font-semibold">
+                    {totals.fiberG.toFixed(1)}g
+                  </Text>
+                  <Text className="text-muted text-xs">Fibra</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-foreground text-base font-semibold">
+                    {netCarbsG.toFixed(1)}g
+                  </Text>
+                  <Text className="text-muted text-xs">Carb Líquido</Text>
+                </View>
+              </View>
+            )}
           </Surface>
         )}
 
-        {/* ── Error ───────────────────────────── */}
+        {/* Error */}
         {saveMutation.isError && (
           <Text className="text-danger text-base text-center">
             Erro ao salvar: {saveMutation.error?.message ?? "Tente novamente"}
           </Text>
         )}
 
-        {/* ── Save button ─────────────────────── */}
+        {/* Save */}
         <Button
           size="lg"
           className="w-full h-16"

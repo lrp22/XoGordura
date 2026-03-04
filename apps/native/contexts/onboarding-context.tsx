@@ -1,5 +1,4 @@
 import type { ActivityLevel, MacroPresetKey } from "@/lib/calories";
-import { MACRO_PRESETS } from "@/lib/calories";
 import {
   createContext,
   useContext,
@@ -8,6 +7,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+
+export type DiabetesType = "type1" | "type2" | "gestational" | "prediabetes";
 
 export interface OnboardingData {
   birthYear: number;
@@ -18,6 +19,9 @@ export interface OnboardingData {
   activityLevel: ActivityLevel;
   deficitPercentage: number;
   macroPreset: MacroPresetKey;
+  hasDiabetes: boolean;
+  diabetesType: DiabetesType | null;
+  dailySugarLimitG: number | null;
 }
 
 interface OnboardingContextType {
@@ -36,6 +40,9 @@ const DEFAULT_DATA: OnboardingData = {
   activityLevel: "sedentary",
   deficitPercentage: 0.2,
   macroPreset: "moderate",
+  hasDiabetes: false,
+  diabetesType: null,
+  dailySugarLimitG: null,
 };
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
