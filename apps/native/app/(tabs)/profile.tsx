@@ -40,9 +40,8 @@ export default function ProfileScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
 
-    await authClient.signOut();
     queryClient.clear();
-    router.replace("/");
+    await authClient.signOut();
   }
 
   function handleEditGoals() {

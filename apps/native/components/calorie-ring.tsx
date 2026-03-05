@@ -15,7 +15,7 @@ export function CalorieRing({
   size = 220,
   strokeWidth = 18,
 }: CalorieRingProps) {
-  const mutedColor = useThemeColor("muted");
+  const mutedColor = "#6b7280"
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -69,11 +69,11 @@ export function CalorieRing({
         <Text className="text-foreground text-5xl font-bold tabular-nums">
           {consumed.toLocaleString("pt-BR")}
         </Text>
-        <Text className="text-muted text-base mt-1">
+        <Text className="text-foreground text-base mt-1">
           de {goal.toLocaleString("pt-BR")} kcal
         </Text>
         <Text
-          className={`text-lg font-semibold mt-2 ${remaining >= 0 ? "text-success" : "text-danger"}`}
+          className={`text-lg font-semibold mt-2 ${remaining >= 0 ? "text-primary" : "text-destructive"}`}
         >
           {remaining >= 0
             ? `Restam ${remaining.toLocaleString("pt-BR")}`

@@ -12,7 +12,7 @@ export default function TabsLayout() {
 
   // If session is lost (sign out), go back to gate
   if (!isPending && session === null) {
-    return <Redirect href="/" />;
+    return <Redirect href="/(auth)" />;
   }
 
   return (
@@ -23,10 +23,11 @@ export default function TabsLayout() {
         headerTitleStyle: { fontWeight: "600", fontSize: 18 },
         headerRight: () => <ThemeToggle />,
         tabBarStyle: {
+          elevation: 0,
+          shadowOpacity: 0,
+          borderTopWidth: 0,
           backgroundColor,
           height: 70,
-          paddingBottom: 10,
-          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -39,6 +40,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Início",
+          headerShown: false,
           headerTitle: "XoGordura",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
@@ -49,6 +51,7 @@ export default function TabsLayout() {
         name="progress"
         options={{
           title: "Progresso",
+          headerShown: false,
           headerTitle: "Progresso",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trending-up" size={size} color={color} />

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Redirect } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
@@ -6,14 +7,21 @@ import { Container } from "@/components/container";
 import { SignIn } from "@/components/sign-in";
 import { SignUp } from "@/components/sign-up";
 import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/utils/orpc";
 
 export default function AuthScreen() {
   const { data: session, isPending } = authClient.useSession();
-  const[showSignIn, setShowSignIn] = useState(true);
+  const [showSignIn, setShowSignIn] = useState(true);
 
-  // If session appears (user just signed in/up), redirect to gate
+  const profileQuery = useQuery({
+    ...orpc.profile.get.queryOptions(),
+    enabled: !isPending && !!session?.user,
+  });
+
   if (!isPending && session?.user) {
-    return <Redirect href="/" />;
+    if (profileQuery.isLoading) return null; // wait briefly
+    if (!profileQuery.data) return <Redirect href="/onboarding" />;
+    return <Redirect href="/(tabs)" />;
   }
 
   return (
@@ -26,7 +34,6 @@ export default function AuthScreen() {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
         <View className="items-center mb-8">
           <Text className="text-5xl mb-3">🍎</Text>
           <Text className="text-foreground text-3xl font-bold">XoGordura</Text>
@@ -35,7 +42,6 @@ export default function AuthScreen() {
           </Text>
         </View>
 
-        {/* Auth forms */}
         {showSignIn ? (
           <View className="gap-4">
             <SignIn />

@@ -94,7 +94,6 @@ export function SignUp() {
               variant: "success",
               label: "Account created successfully",
             });
-            queryClient.refetchQueries();
           },
         },
       );

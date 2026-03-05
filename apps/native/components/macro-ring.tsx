@@ -23,8 +23,7 @@ export function MacroRing({
   size = 90,
   strokeWidth = 8,
 }: MacroRingProps) {
-  const mutedColor = useThemeColor("muted");
-
+  const mutedColor = "#6b7280";
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = Math.min(consumed / Math.max(goal, 1), 1);
@@ -78,7 +77,7 @@ export function MacroRing({
           <Text className="text-foreground text-lg font-bold tabular-nums">
             {Math.round(consumed)}
           </Text>
-          <Text className="text-muted" style={{ fontSize: 9 }}>
+          <Text className="text-foreground" style={{ fontSize: 14 }}>
             /{goal}
             {unit}
           </Text>
@@ -88,12 +87,12 @@ export function MacroRing({
       {/* Label below */}
       <View className="flex-row items-center gap-1 mt-1.5">
         <Text style={{ fontSize: 12 }}>{emoji}</Text>
-        <Text className="text-muted text-xs font-medium">{label}</Text>
+        <Text className="text-foreground text-xs font-medium">{label}</Text>
       </View>
 
       {/* Remaining / over */}
       <Text
-        className={`text-xs font-semibold mt-0.5 ${remaining >= 0 ? "text-muted" : "text-danger"}`}
+        className={`text-xs font-semibold mt-0.5 ${remaining >= 0 ? "text-primary" : "text-destructive"}`}
         style={{ fontSize: 10 }}
       >
         {remaining >= 0

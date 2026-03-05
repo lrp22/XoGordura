@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Card, Spinner, Surface } from "heroui-native";
 import { Platform, Pressable, Text, View } from "react-native";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CalorieRing } from "@/components/calorie-ring";
 import { MacroRing } from "@/components/macro-ring";
 import { Container } from "@/components/container";
@@ -22,6 +22,7 @@ const MACRO_COLORS = {
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const firstName = session?.user?.name?.split(" ")[0] ?? "";
@@ -76,7 +77,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <Container scrollViewProps={{ showsVerticalScrollIndicator: false }}>
         <View className="px-6 pt-4 pb-32 gap-6">
           {/* ── Greeting ────────────────────────── */}
@@ -84,7 +85,7 @@ export default function HomeScreen() {
             <Text className="text-foreground text-3xl font-bold">
               Olá, {firstName}! 👋
             </Text>
-            <Text className="text-muted text-lg mt-1">
+            <Text className="text-muted-foreground text-lg mt-1">
               {new Date().toLocaleDateString("pt-BR", {
                 weekday: "long",
                 day: "numeric",
@@ -167,10 +168,10 @@ export default function HomeScreen() {
             >
               <Text className="text-2xl">⚠️</Text>
               <View className="flex-1">
-                <Text className="text-danger text-sm font-bold">
+                <Text className="text-destructive text-sm font-bold">
                   Limite de açúcar excedido
                 </Text>
-                <Text className="text-muted text-xs">
+                <Text className="text-foreground text-xs">
                   Consumo: {consumed.sugar.toFixed(1)}g / Meta: {goals.sugar}g.
                   Considere alimentos com menor índice glicêmico.
                 </Text>
@@ -192,13 +193,13 @@ export default function HomeScreen() {
               <Pressable onPress={handleAddMeal} className="active:opacity-80">
                 <Surface
                   variant="secondary"
-                  className="p-8 rounded-2xl items-center"
+                  className="p-8 rounded-2xl items-center bg-card"
                 >
                   <Text className="text-5xl mb-3">🍽️</Text>
                   <Text className="text-foreground text-lg font-medium mb-1">
                     Nenhuma refeição ainda
                   </Text>
-                  <Text className="text-muted text-base text-center mb-4">
+                  <Text className="text-muted-foreground text-base text-center mb-4">
                     Toque aqui ou no botão + abaixo{"\n"}para registrar sua
                     refeição
                   </Text>
@@ -238,7 +239,7 @@ export default function HomeScreen() {
                         <Text className="text-foreground text-xl font-bold">
                           {meal.totalCalories}
                         </Text>
-                        <Text className="text-muted text-xs">kcal</Text>
+                        <Text className="text-muted-foreground text-xs">kcal</Text>
                       </View>
                     </View>
 
@@ -249,7 +250,7 @@ export default function HomeScreen() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: MACRO_COLORS.protein }}
                         />
-                        <Text className="text-muted text-xs">
+                        <Text className="text-muted-foreground text-xs">
                           P: {meal.totalProteinG.toFixed(1)}g
                         </Text>
                       </View>
@@ -258,7 +259,7 @@ export default function HomeScreen() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: MACRO_COLORS.carbs }}
                         />
-                        <Text className="text-muted text-xs">
+                        <Text className="text-muted-foreground text-xs">
                           C: {meal.totalCarbsG.toFixed(1)}g
                         </Text>
                       </View>
@@ -267,7 +268,7 @@ export default function HomeScreen() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: MACRO_COLORS.fat }}
                         />
-                        <Text className="text-muted text-xs">
+                        <Text className="text-muted-foreground text-xs">
                           G: {meal.totalFatG.toFixed(1)}g
                         </Text>
                       </View>
@@ -278,7 +279,7 @@ export default function HomeScreen() {
                               className="w-2 h-2 rounded-full"
                               style={{ backgroundColor: MACRO_COLORS.sugar }}
                             />
-                            <Text className="text-muted text-xs">
+                            <Text className="text-muted-foreground text-xs">
                               Aç: {meal.totalSugarG.toFixed(1)}g
                             </Text>
                           </View>
@@ -287,7 +288,7 @@ export default function HomeScreen() {
                               className="w-2 h-2 rounded-full"
                               style={{ backgroundColor: MACRO_COLORS.fiber }}
                             />
-                            <Text className="text-muted text-xs">
+                            <Text className="text-muted-foreground text-xs">
                               Fi: {meal.totalFiberG.toFixed(1)}g
                             </Text>
                           </View>
@@ -295,7 +296,7 @@ export default function HomeScreen() {
                       )}
                       {meal.aiTip && !isDiabetic && (
                         <Text
-                          className="text-muted text-xs flex-1 text-right"
+                          className="text-muted-foreground text-xs flex-1 text-right"
                           numberOfLines={1}
                         >
                           💡 {meal.aiTip}
@@ -329,22 +330,34 @@ export default function HomeScreen() {
         </View>
       </Container>
 
-      {/* ═══ FAB ═══ */}
+      {/* ═══ FAB (Agora com estilos Nativos para garantir a renderização) ═══ */}
       <View
-        className="absolute bottom-6 right-6"
         style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
+          position: "absolute",
+          bottom: insets.bottom + 24, // Note: If your TabBar is already taking up space, you might just need 'bottom: 24' or to add the TabBar height here.
+          right: 24,
+          zIndex: 50, // <-- Add this to fix rendering glitches
         }}
       >
         <Pressable
           onPress={handleAddMeal}
-          className="bg-primary w-20 h-20 rounded-full items-center justify-center active:opacity-80"
+          style={({ pressed }) => ({
+            width: 64, // Largura fixa
+            height: 64, // Altura fixa
+            borderRadius: 32, // Metade da largura/altura para ficar perfeitamente redondo
+            backgroundColor: "#f59e0b", // Cor verde (mesma do outro botão da tela)
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.8 : 1, // Efeito de clique
+            // Sombras para Android e iOS
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.35,
+            shadowRadius: 8,
+            elevation: 10,
+          })}
         >
-          <Ionicons name="add" size={40} color="#fff" />
+          <Ionicons name="add" size={36} color="#ffffff" />
         </Pressable>
       </View>
     </View>

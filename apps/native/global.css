@@ -3,3 +3,77 @@
 @import "heroui-native/styles";
 
 @source './node_modules/heroui-native/lib';
+
+/* 1. Definindo as variantes de tema */
+@layer theme {
+  @variant light {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.2686 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.2686 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.2686 0 0);
+    --primary: oklch(0.7686 0.1647 70.0804);
+    --primary-foreground: oklch(0 0 0);
+    --secondary: oklch(0.967 0.0029 264.5419);
+    --secondary-foreground: oklch(0.4461 0.0263 256.8018);
+    --muted: oklch(0.9846 0.0017 247.8389);
+    --muted-foreground: oklch(0.551 0.0234 264.3637);
+    --accent: oklch(0.9869 0.0214 95.2774);
+    --accent-foreground: oklch(0.4732 0.1247 46.2007);
+    --destructive: oklch(0.6368 0.2078 25.3313);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.9276 0.0058 264.5313);
+    --input: oklch(0.9276 0.0058 264.5313);
+    --ring: oklch(0.7686 0.1647 70.0804);
+  }
+
+  @variant dark {
+    --background: oklch(0.2046 0 0);
+    --foreground: oklch(0.9219 0 0);
+    --card: oklch(0.2686 0 0);
+    --card-foreground: oklch(0.9219 0 0);
+    --popover: oklch(0.2686 0 0);
+    --popover-foreground: oklch(0.9219 0 0);
+    --primary: oklch(0.7686 0.1647 70.0804);
+    --primary-foreground: oklch(0 0 0);
+    --secondary: oklch(0.2686 0 0);
+    --secondary-foreground: oklch(0.9219 0 0);
+    --muted: oklch(0.2393 0 0);
+    --muted-foreground: oklch(0.7155 0 0);
+    --accent: oklch(0.4732 0.1247 46.2007);
+    --accent-foreground: oklch(0.9243 0.1151 95.7459);
+    --destructive: oklch(0.6368 0.2078 25.3313);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.3715 0 0);
+    --input: oklch(0.3715 0 0);
+    --ring: oklch(0.7686 0.1647 70.0804);
+  }
+}
+
+/* 2. Mapeamento para Tailwind/Uniwind (O que permite usar bg-primary, etc) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+
+  --radius-lg: 0.75rem;
+}
+
+/* 3. Base global (Opcional - mas mantém o app limpo) */
+@layer base {
+  * {
+    @apply border-border;
+  }
+}

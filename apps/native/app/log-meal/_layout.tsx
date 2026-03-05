@@ -6,7 +6,7 @@ import { LogMealProvider } from "@/contexts/log-meal-context";
 export default function LogMealLayout() {
   const foregroundColor = useThemeColor("foreground");
   const backgroundColor = useThemeColor("background");
-
+  console.log("Background Color:", backgroundColor);
   return (
     <LogMealProvider>
       <Stack

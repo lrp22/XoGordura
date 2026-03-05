@@ -97,7 +97,7 @@ export default function LogMealInput() {
           <Text className="text-foreground text-xl font-medium text-center">
             {LOADING_MESSAGES[loadingMsgIndex]}
           </Text>
-          <Text className="text-muted text-base text-center">
+          <Text className="text-muted-foreground text-base text-center">
             Isso pode levar alguns segundos
           </Text>
         </View>
@@ -107,7 +107,7 @@ export default function LogMealInput() {
 
   return (
     <Container>
-      <View className="px-6 pt-4 pb-8 gap-6">
+      <View className="px-6 pt-4 pb-8 gap-6 bg-background">
         {/* ── Meal type selector ──────────────── */}
         <View>
           <Text className="text-foreground text-lg font-semibold mb-3">
@@ -124,16 +124,16 @@ export default function LogMealInput() {
                 >
                   <Surface
                     variant="secondary"
-                    className="py-4 px-2 rounded-xl items-center"
-                    style={
-                      isSelected
-                        ? { borderWidth: 2, borderColor: primaryColor }
-                        : { borderWidth: 2, borderColor: "transparent" }
-                    }
+                    // Adicione as classes de borda condicionalmente aqui
+                    className={`py-4 px-2 rounded-xl bg-card items-center border-2 ${
+                      isSelected ? "border-primary" : "border-transparent"
+                    }`}
                   >
                     <Text className="text-2xl mb-1">{type.emoji}</Text>
                     <Text
-                      className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}
+                      className={`text-sm font-semibold ${
+                        isSelected ? "text-primary" : "text-foreground"
+                      }`}
                     >
                       {type.label}
                     </Text>
@@ -156,13 +156,13 @@ export default function LogMealInput() {
             className="flex-row items-center gap-2 mb-3 py-2"
           >
             <Ionicons name="mic" size={20} color={primaryColor} />
-            <Text className="text-muted text-sm">
+            <Text className="text-muted-foreground text-sm">
               Dica: use o 🎤 do teclado para falar
             </Text>
           </Pressable>
 
           {/* Text input */}
-          <Surface variant="secondary" className="rounded-xl p-1">
+          <Surface variant="secondary" className="rounded-xl p-1 bg-card">
             <TextInput
               ref={inputRef}
               value={voiceTranscript}
@@ -184,7 +184,7 @@ export default function LogMealInput() {
           </Surface>
 
           {voiceTranscript.length > 0 && (
-            <Text className="text-muted text-sm mt-2 text-right">
+            <Text className="text-muted-foreground text-sm mt-2 text-right">
               {voiceTranscript.length} caracteres
             </Text>
           )}
@@ -197,10 +197,10 @@ export default function LogMealInput() {
             className="p-4 rounded-xl"
             style={{ borderWidth: 1, borderColor: "#E53935" }}
           >
-            <Text className="text-danger text-base font-medium mb-1">
+            <Text className="text-destructive text-base font-medium mb-1">
               Erro ao analisar 😕
             </Text>
-            <Text className="text-muted text-sm">
+            <Text className="text-muted-foreground text-sm">
               {analyzeMutation.error?.message ?? "Tente novamente"}
             </Text>
           </Surface>
@@ -209,7 +209,7 @@ export default function LogMealInput() {
         {/* ── Examples (when input is empty) ──── */}
         {voiceTranscript.length === 0 && (
           <View>
-            <Text className="text-muted text-sm font-medium mb-2">
+            <Text className="text-muted-foreground text-sm font-medium mb-2">
               Exemplos:
             </Text>
             {[
@@ -223,7 +223,9 @@ export default function LogMealInput() {
                 onPress={() => setVoiceTranscript(example)}
                 className="py-2 active:opacity-60"
               >
-                <Text className="text-primary text-base">→ "{example}"</Text>
+                <Text className="text-muted-foreground text-base">
+                  → "{example}"
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -232,11 +234,13 @@ export default function LogMealInput() {
         {/* ── Analyze button ──────────────────── */}
         <Button
           size="lg"
-          className="w-full h-16"
+          className="w-full h-16 bg-primary"
           onPress={handleAnalyze}
           isDisabled={!canAnalyze}
         >
-          <Button.Label className="text-lg">🔍 Analisar Refeição</Button.Label>
+          <Button.Label className="text-lg text-foreground">
+            🔍 Analisar Refeição
+          </Button.Label>
         </Button>
       </View>
     </Container>
