@@ -26,10 +26,10 @@ export function NumberStepper({
   decimals = 0,
 }: NumberStepperProps) {
   const foregroundColor = useThemeColor("foreground");
+  const accentColor = useThemeColor("accent");
   const isMin = value <= min;
   const isMax = value >= max;
 
-  // Local state so the user can type freely (like "75.") before it formats
   const [textValue, setTextValue] = useState(value.toFixed(decimals));
 
   useEffect(() => {
@@ -57,8 +57,8 @@ export function NumberStepper({
   }
 
   return (
-    <View className="items-center gap-2 py-3">
-      <Text className="text-foreground text-lg font-medium">
+    <View className="items-center gap-2 py-4">
+      <Text className="text-muted-foreground text-base font-semibold tracking-wide uppercase">
         {label} ({unit})
       </Text>
 
@@ -66,7 +66,9 @@ export function NumberStepper({
         <Pressable
           onPress={() => handlePress(-step)}
           disabled={isMin}
-          className={`w-16 h-16 rounded-2xl bg-muted items-center justify-center active:opacity-60 ${isMin ? "opacity-30" : ""}`}
+          className={`w-16 h-16 rounded-2xl bg-secondary items-center justify-center active:scale-90 ${
+            isMin ? "opacity-30" : ""
+          }`}
         >
           <Ionicons name="remove" size={32} color={foregroundColor} />
         </Pressable>
@@ -77,13 +79,17 @@ export function NumberStepper({
           onBlur={handleBlur}
           keyboardType="numeric"
           returnKeyType="done"
-          className="text-foreground text-5xl font-bold tabular-nums text-center min-w-[120px]"
+          className="text-foreground text-5xl font-bold tabular-nums text-center min-w-[130px]"
+          style={{ color: foregroundColor }}
+          selectionColor={accentColor}
         />
 
         <Pressable
           onPress={() => handlePress(step)}
           disabled={isMax}
-          className={`w-16 h-16 rounded-2xl bg-muted items-center justify-center active:opacity-60 ${isMax ? "opacity-30" : ""}`}
+          className={`w-16 h-16 rounded-2xl bg-secondary items-center justify-center active:scale-90 ${
+            isMax ? "opacity-30" : ""
+          }`}
         >
           <Ionicons name="add" size={32} color={foregroundColor} />
         </Pressable>

@@ -1,6 +1,8 @@
-import { useThemeColor } from "heroui-native";
 import { Text, View } from "react-native";
+import { useColorScheme } from "react-native";
+import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
+import { ringColors } from "@/constants/ring-colors";
 
 interface CalorieRingProps {
   consumed: number;
@@ -15,7 +17,8 @@ export function CalorieRing({
   size = 220,
   strokeWidth = 18,
 }: CalorieRingProps) {
-  const mutedColor = "#6b7280"
+  const scheme = useColorScheme();
+  const colors = ringColors[scheme === "dark" ? "dark" : "light"];
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -24,35 +27,31 @@ export function CalorieRing({
   const isOver = consumed > goal;
   const remaining = goal - consumed;
 
-  const progressColor = isOver ? "#E53935" : "#4CAF50";
-
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <Animated.View
+      entering={ZoomIn.duration(600).springify()}
+      className="items-center justify-center"
+      style={{ width: size, height: size }}
     >
-      <Svg width={size} height={size}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {/* Background track */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={mutedColor}
+          stroke={colors.track}
           strokeWidth={strokeWidth}
           fill="none"
           opacity={0.3}
         />
+
         {/* Progress arc */}
         {consumed > 0 && (
           <Circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={progressColor}
+            stroke={isOver ? colors.danger : colors.success}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={`${circumference} ${circumference}`}
@@ -64,22 +63,26 @@ export function CalorieRing({
         )}
       </Svg>
 
-      {/* Center text */}
-      <View style={{ position: "absolute", alignItems: "center" }}>
+      <Animated.View
+        entering={FadeIn.delay(300).duration(400)}
+        className="absolute items-center"
+      >
         <Text className="text-foreground text-5xl font-bold tabular-nums">
           {consumed.toLocaleString("pt-BR")}
         </Text>
-        <Text className="text-foreground text-base mt-1">
+        <Text className="text-muted-foreground text-base mt-1">
           de {goal.toLocaleString("pt-BR")} kcal
         </Text>
         <Text
-          className={`text-lg font-semibold mt-2 ${remaining >= 0 ? "text-primary" : "text-destructive"}`}
+          className={`text-lg font-bold mt-2 ${
+            remaining >= 0 ? "text-primary" : "text-danger"
+          }`}
         >
           {remaining >= 0
             ? `Restam ${remaining.toLocaleString("pt-BR")}`
             : `${Math.abs(remaining).toLocaleString("pt-BR")} acima`}
         </Text>
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }

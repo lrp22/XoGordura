@@ -11,6 +11,7 @@ export default function LogMealLayout() {
     <LogMealProvider>
       <Stack
         screenOptions={{
+          headerShown: false,
           headerStyle: { backgroundColor },
           headerTintColor: foregroundColor,
           headerTitleStyle: { fontWeight: "600", fontSize: 18 },

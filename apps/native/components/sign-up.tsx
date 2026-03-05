@@ -11,6 +11,7 @@ import {
 } from "heroui-native";
 import { useRef } from "react";
 import { Text, TextInput, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
@@ -20,43 +21,33 @@ const signUpSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Name is required")
-    .min(2, "Name must be at least 2 characters"),
+    .min(1, "Nome é obrigatório")
+    .min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z
     .string()
     .trim()
-    .min(1, "Email is required")
-    .email("Enter a valid email address"),
+    .min(1, "Email é obrigatório")
+    .email("Insira um email válido"),
   password: z
     .string()
-    .min(1, "Password is required")
-    .min(8, "Use at least 8 characters"),
+    .min(1, "Senha é obrigatória")
+    .min(8, "Use pelo menos 8 caracteres"),
 });
 
 function getErrorMessage(error: unknown): string | null {
   if (!error) return null;
-
-  if (typeof error === "string") {
-    return error;
-  }
-
+  if (typeof error === "string") return error;
   if (Array.isArray(error)) {
     for (const issue of error) {
       const message = getErrorMessage(issue);
-      if (message) {
-        return message;
-      }
+      if (message) return message;
     }
     return null;
   }
-
   if (typeof error === "object" && error !== null) {
     const maybeError = error as { message?: unknown };
-    if (typeof maybeError.message === "string") {
-      return maybeError.message;
-    }
+    if (typeof maybeError.message === "string") return maybeError.message;
   }
-
   return null;
 }
 
@@ -66,14 +57,8 @@ export function SignUp() {
   const { toast } = useToast();
 
   const form = useForm({
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
-    validators: {
-      onSubmit: signUpSchema,
-    },
+    defaultValues: { name: "", email: "", password: "" },
+    validators: { onSubmit: signUpSchema },
     onSubmit: async ({ value, formApi }) => {
       await authClient.signUp.email(
         {
@@ -85,14 +70,14 @@ export function SignUp() {
           onError(error) {
             toast.show({
               variant: "danger",
-              label: error.error?.message || "Failed to sign up",
+              label: error.error?.message || "Falha ao criar conta",
             });
           },
           onSuccess() {
             formApi.reset();
             toast.show({
               variant: "success",
-              label: "Account created successfully",
+              label: "Conta criada com sucesso!",
             });
           },
         },
@@ -101,23 +86,38 @@ export function SignUp() {
   });
 
   return (
-    <Surface variant="secondary" className="p-4 rounded-lg">
-      <form.Subscribe
-        selector={(state) => ({
-          isSubmitting: state.isSubmitting,
-          validationError: getErrorMessage(state.errorMap.onSubmit),
-        })}
+    <Animated.View entering={FadeInDown.duration(600).springify()}>
+      <Surface
+        variant="secondary"
+        className="p-6 rounded-3xl border border-border bg-card"
       >
-        {({ isSubmitting, validationError }) => {
-          const formError = validationError;
+        {/* Header */}
+        <View className="items-center mb-6">
+          <Text className="text-foreground text-xl font-bold">
+            Crie sua conta
+          </Text>
+          <Text className="text-muted-foreground text-sm mt-1">
+            Comece a rastrear sua alimentação
+          </Text>
+        </View>
 
-          return (
+        <form.Subscribe
+          selector={(state) => ({
+            isSubmitting: state.isSubmitting,
+            validationError: getErrorMessage(state.errorMap.onSubmit),
+          })}
+        >
+          {({ isSubmitting, validationError }) => (
             <>
-              <FieldError isInvalid={!!formError} className="mb-3">
-                {formError}
-              </FieldError>
+              {validationError && (
+                <Animated.View entering={FadeInDown.duration(300)}>
+                  <FieldError isInvalid className="mb-4">
+                    {validationError}
+                  </FieldError>
+                </Animated.View>
+              )}
 
-              <View className="gap-3">
+              <View className="gap-4">
                 <form.Field name="name">
                   {(field) => (
                     <TextField>
@@ -126,14 +126,12 @@ export function SignUp() {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChangeText={field.handleChange}
-                        placeholder="John Doe"
+                        placeholder="Seu nome"
                         autoComplete="name"
                         textContentType="name"
                         returnKeyType="next"
                         blurOnSubmit={false}
-                        onSubmitEditing={() => {
-                          emailInputRef.current?.focus();
-                        }}
+                        onSubmitEditing={() => emailInputRef.current?.focus()}
                       />
                     </TextField>
                   )}
@@ -148,16 +146,16 @@ export function SignUp() {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChangeText={field.handleChange}
-                        placeholder="email@example.com"
+                        placeholder="email@exemplo.com"
                         keyboardType="email-address"
                         autoCapitalize="none"
                         autoComplete="email"
                         textContentType="emailAddress"
                         returnKeyType="next"
                         blurOnSubmit={false}
-                        onSubmitEditing={() => {
-                          passwordInputRef.current?.focus();
-                        }}
+                        onSubmitEditing={() =>
+                          passwordInputRef.current?.focus()
+                        }
                       />
                     </TextField>
                   )}
@@ -184,21 +182,24 @@ export function SignUp() {
                 </form.Field>
 
                 <Button
+                  size="lg"
                   onPress={form.handleSubmit}
                   isDisabled={isSubmitting}
-                  className="mt-1"
+                  className="mt-2 h-14 bg-primary"
                 >
                   {isSubmitting ? (
                     <Spinner size="sm" color="default" />
                   ) : (
-                    <Button.Label>Criar Conta</Button.Label>
+                    <Button.Label className="text-base font-bold">
+                      Criar Conta
+                    </Button.Label>
                   )}
                 </Button>
               </View>
             </>
-          );
-        }}
-      </form.Subscribe>
-    </Surface>
+          )}
+        </form.Subscribe>
+      </Surface>
+    </Animated.View>
   );
 }

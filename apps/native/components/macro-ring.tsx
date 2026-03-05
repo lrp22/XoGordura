@@ -1,6 +1,7 @@
-import { useThemeColor } from "heroui-native";
-import { Text, View } from "react-native";
+import { Text, View, useColorScheme } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
+import { ringColors } from "@/constants/ring-colors";
 
 interface MacroRingProps {
   label: string;
@@ -8,9 +9,10 @@ interface MacroRingProps {
   consumed: number;
   goal: number;
   unit?: string;
-  color: string;
+  macroType: "protein" | "carbs" | "fat" | "sugar" | "fiber" | "netCarbs";
   size?: number;
   strokeWidth?: number;
+  index?: number;
 }
 
 export function MacroRing({
@@ -19,11 +21,16 @@ export function MacroRing({
   consumed,
   goal,
   unit = "g",
-  color,
+  macroType,
   size = 90,
   strokeWidth = 8,
+  index = 0,
 }: MacroRingProps) {
-  const mutedColor = "#6b7280";
+  const scheme = useColorScheme();
+  const colors = ringColors[scheme === "dark" ? "dark" : "light"];
+
+  const baseColor = colors[macroType];
+
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = Math.min(consumed / Math.max(goal, 1), 1);
@@ -31,10 +38,15 @@ export function MacroRing({
   const isOver = consumed > goal;
   const remaining = goal - consumed;
 
-  const ringColor = isOver ? "#E53935" : color;
+  const ringColor = isOver ? colors.danger : baseColor;
 
   return (
-    <View className="items-center">
+    <Animated.View
+      entering={FadeInUp.delay(400 + index * 100)
+        .duration(500)
+        .springify()}
+      className="items-center"
+    >
       <View
         style={{
           width: size,
@@ -44,17 +56,15 @@ export function MacroRing({
         }}
       >
         <Svg width={size} height={size}>
-          {/* Background track */}
           <Circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={mutedColor}
+            stroke={colors.track}
             strokeWidth={strokeWidth}
             fill="none"
-            opacity={0.25}
+            opacity={0.3}
           />
-          {/* Progress arc */}
           {consumed > 0 && (
             <Circle
               cx={size / 2}
@@ -72,33 +82,32 @@ export function MacroRing({
           )}
         </Svg>
 
-        {/* Center content */}
         <View style={{ position: "absolute", alignItems: "center" }}>
           <Text className="text-foreground text-lg font-bold tabular-nums">
             {Math.round(consumed)}
           </Text>
-          <Text className="text-foreground" style={{ fontSize: 14 }}>
+          <Text className="text-muted-foreground" style={{ fontSize: 12 }}>
             /{goal}
             {unit}
           </Text>
         </View>
       </View>
 
-      {/* Label below */}
       <View className="flex-row items-center gap-1 mt-1.5">
         <Text style={{ fontSize: 12 }}>{emoji}</Text>
-        <Text className="text-foreground text-xs font-medium">{label}</Text>
+        <Text className="text-foreground text-xs font-semibold">{label}</Text>
       </View>
 
-      {/* Remaining / over */}
       <Text
-        className={`text-xs font-semibold mt-0.5 ${remaining >= 0 ? "text-primary" : "text-destructive"}`}
-        style={{ fontSize: 10 }}
+        className={`font-bold mt-0.5 ${
+          remaining >= 0 ? "text-primary" : "text-danger"
+        }`}
+        style={{ fontSize: 12 }}
       >
         {remaining >= 0
-          ? `${Math.round(remaining)}${unit} restam`
-          : `${Math.abs(Math.round(remaining))}${unit} acima`}
+          ? `${Math.round(remaining)}${unit}`
+          : `${Math.abs(Math.round(remaining))}${unit} extra`}
       </Text>
-    </View>
+    </Animated.View>
   );
 }

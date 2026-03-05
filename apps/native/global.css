@@ -4,54 +4,66 @@
 
 @source './node_modules/heroui-native/lib';
 
-/* 1. Definindo as variantes de tema */
+/* ─── Theme variants ─────────────────────────────────────── */
 @layer theme {
   @variant light {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.2686 0 0);
+    --background: oklch(0.9856 0.0084 56.3169);
+    --foreground: oklch(0.3353 0.0132 2.7676);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.2686 0 0);
+    --card-foreground: oklch(0.3353 0.0132 2.7676);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.2686 0 0);
-    --primary: oklch(0.7686 0.1647 70.0804);
-    --primary-foreground: oklch(0 0 0);
-    --secondary: oklch(0.967 0.0029 264.5419);
-    --secondary-foreground: oklch(0.4461 0.0263 256.8018);
-    --muted: oklch(0.9846 0.0017 247.8389);
-    --muted-foreground: oklch(0.551 0.0234 264.3637);
-    --accent: oklch(0.9869 0.0214 95.2774);
-    --accent-foreground: oklch(0.4732 0.1247 46.2007);
-    --destructive: oklch(0.6368 0.2078 25.3313);
+    --popover-foreground: oklch(0.3353 0.0132 2.7676);
+    --primary: oklch(0.7357 0.1641 34.7091);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.9596 0.02 28.9029);
+    --secondary-foreground: oklch(0.5587 0.1294 32.7364);
+    --muted: oklch(0.9656 0.0176 39.4009);
+    --muted-foreground: oklch(0.5534 0.0116 58.0708);
+    --accent: oklch(0.8278 0.1131 57.9984);
+    --accent-foreground: oklch(0.3353 0.0132 2.7676);
+    --destructive: oklch(0.6122 0.2082 22.241);
     --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.9276 0.0058 264.5313);
-    --input: oklch(0.9276 0.0058 264.5313);
-    --ring: oklch(0.7686 0.1647 70.0804);
+    --border: oklch(0.9296 0.037 38.6868);
+    --input: oklch(0.9296 0.037 38.6868);
+    --ring: oklch(0.7357 0.1641 34.7091);
+    --success: oklch(0.52 0.17 155);
+    --warning: oklch(0.7 0.155 70);
+    --danger: oklch(0.53 0.24 25);
+    --ring-track: #e5e7eb;
+    --ring-success: #22c55e;
+    --ring-danger: #ef4444;
   }
 
   @variant dark {
-    --background: oklch(0.2046 0 0);
-    --foreground: oklch(0.9219 0 0);
-    --card: oklch(0.2686 0 0);
-    --card-foreground: oklch(0.9219 0 0);
-    --popover: oklch(0.2686 0 0);
-    --popover-foreground: oklch(0.9219 0 0);
-    --primary: oklch(0.7686 0.1647 70.0804);
-    --primary-foreground: oklch(0 0 0);
-    --secondary: oklch(0.2686 0 0);
-    --secondary-foreground: oklch(0.9219 0 0);
-    --muted: oklch(0.2393 0 0);
-    --muted-foreground: oklch(0.7155 0 0);
-    --accent: oklch(0.4732 0.1247 46.2007);
-    --accent-foreground: oklch(0.9243 0.1151 95.7459);
-    --destructive: oklch(0.6368 0.2078 25.3313);
+    --background: oklch(0.2569 0.0169 352.4042);
+    --foreground: oklch(0.9397 0.0119 51.3156);
+    --card: oklch(0.3184 0.0176 341.4465);
+    --card-foreground: oklch(0.9397 0.0119 51.3156);
+    --popover: oklch(0.3184 0.0176 341.4465);
+    --popover-foreground: oklch(0.9397 0.0119 51.3156);
+    --primary: oklch(0.7357 0.1641 34.7091);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.3637 0.0203 342.2664);
+    --secondary-foreground: oklch(0.9397 0.0119 51.3156);
+    --muted: oklch(0.2848 0.0159 343.6554);
+    --muted-foreground: oklch(0.8378 0.0237 52.6346);
+    --accent: oklch(0.8278 0.1131 57.9984);
+    --accent-foreground: oklch(0.2569 0.0169 352.4042);
+    --destructive: oklch(0.6122 0.2082 22.241);
     --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.3715 0 0);
-    --input: oklch(0.3715 0 0);
-    --ring: oklch(0.7686 0.1647 70.0804);
+    --border: oklch(0.3637 0.0203 342.2664);
+    --input: oklch(0.3637 0.0203 342.2664);
+    --ring: oklch(0.7357 0.1641 34.7091);
+    --success: oklch(0.68 0.19 155);
+    --warning: oklch(0.78 0.14 75);
+    --danger: oklch(0.62 0.22 25);
+    --ring-track: #374151;
+    --ring-success: #10b981;
+    --ring-danger: #f87171;
   }
 }
 
-/* 2. Mapeamento para Tailwind/Uniwind (O que permite usar bg-primary, etc) */
+/* ─── Tailwind / Uniwind mapping ─────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -66,12 +78,19 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
   --color-destructive: var(--destructive);
-
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-ring-track: var(--ring-track);
+  --color-ring-success: var(--ring-success);
+  --color-ring-danger: var(--ring-danger);
   --radius-lg: 0.75rem;
 }
 
-/* 3. Base global (Opcional - mas mantém o app limpo) */
+/* ─── Base reset ─────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;

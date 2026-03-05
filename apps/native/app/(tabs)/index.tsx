@@ -11,21 +11,17 @@ import { Container } from "@/components/container";
 import { getLocalToday, getMealTypeEmoji, getMealTypeLabel } from "@/lib/date";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
-
-const MACRO_COLORS = {
-  protein: "#3B82F6",
-  fat: "#F59E0B",
-  carbs: "#8B5CF6",
-  sugar: "#E53935",
-  fiber: "#4CAF50",
-  netCarbs: "#EC4899",
-};
+import { useColorScheme } from "react-native";
+import { ringColors } from "@/constants/ring-colors";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const firstName = session?.user?.name?.split(" ")[0] ?? "";
+
+  const scheme = useColorScheme();
+  const colors = ringColors[scheme === "dark" ? "dark" : "light"];
 
   const profileQuery = useQuery(orpc.profile.get.queryOptions());
   const today = getLocalToday();
@@ -106,21 +102,21 @@ export default function HomeScreen() {
               emoji="🥩"
               consumed={consumed.protein}
               goal={goals.protein}
-              color={MACRO_COLORS.protein}
+              macroType="protein"
             />
             <MacroRing
               label="Gordura"
               emoji="🥑"
               consumed={consumed.fat}
               goal={goals.fat}
-              color={MACRO_COLORS.fat}
+              macroType="fat"
             />
             <MacroRing
               label="Carbos"
               emoji="🍚"
               consumed={consumed.carbs}
               goal={goals.carbs}
-              color={MACRO_COLORS.carbs}
+              macroType="carbs"
             />
           </View>
 
@@ -139,21 +135,21 @@ export default function HomeScreen() {
                   emoji="🍬"
                   consumed={consumed.sugar}
                   goal={goals.sugar}
-                  color={MACRO_COLORS.sugar}
+                  macroType="sugar"
                 />
                 <MacroRing
                   label="Fibra"
                   emoji="🥬"
                   consumed={consumed.fiber}
                   goal={25}
-                  color={MACRO_COLORS.fiber}
+                  macroType="fiber"
                 />
                 <MacroRing
                   label="Carb Líq."
                   emoji="📊"
                   consumed={netCarbs}
                   goal={Math.max(0, goals.carbs - 25)}
-                  color={MACRO_COLORS.netCarbs}
+                  macroType="netCarbs"
                 />
               </View>
             </View>
@@ -228,7 +224,7 @@ export default function HomeScreen() {
                             {getMealTypeLabel(meal.mealType)}
                           </Text>
                           <Text
-                            className="text-muted text-sm mt-0.5"
+                            className="text-muted-foreground text-sm mt-0.5"
                             numberOfLines={1}
                           >
                             {meal.items?.map((i) => i.name).join(", ")}
@@ -236,10 +232,12 @@ export default function HomeScreen() {
                         </View>
                       </View>
                       <View className="items-end">
-                        <Text className="text-foreground text-xl font-bold">
+                        <Text className="text-foreground text-3xl font-bold">
                           {meal.totalCalories}
                         </Text>
-                        <Text className="text-muted-foreground text-xs">kcal</Text>
+                        <Text className="text-muted-foreground text-xs">
+                          kcal
+                        </Text>
                       </View>
                     </View>
 
@@ -248,7 +246,7 @@ export default function HomeScreen() {
                       <View className="flex-row items-center gap-1">
                         <View
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: MACRO_COLORS.protein }}
+                          style={{ backgroundColor: colors.protein }}
                         />
                         <Text className="text-muted-foreground text-xs">
                           P: {meal.totalProteinG.toFixed(1)}g
@@ -257,7 +255,7 @@ export default function HomeScreen() {
                       <View className="flex-row items-center gap-1">
                         <View
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: MACRO_COLORS.carbs }}
+                          style={{ backgroundColor: colors.carbs }}
                         />
                         <Text className="text-muted-foreground text-xs">
                           C: {meal.totalCarbsG.toFixed(1)}g
@@ -266,7 +264,7 @@ export default function HomeScreen() {
                       <View className="flex-row items-center gap-1">
                         <View
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: MACRO_COLORS.fat }}
+                          style={{ backgroundColor: colors.fat }}
                         />
                         <Text className="text-muted-foreground text-xs">
                           G: {meal.totalFatG.toFixed(1)}g
@@ -277,7 +275,7 @@ export default function HomeScreen() {
                           <View className="flex-row items-center gap-1">
                             <View
                               className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: MACRO_COLORS.sugar }}
+                              style={{ backgroundColor: colors.sugar }}
                             />
                             <Text className="text-muted-foreground text-xs">
                               Aç: {meal.totalSugarG.toFixed(1)}g
@@ -286,7 +284,7 @@ export default function HomeScreen() {
                           <View className="flex-row items-center gap-1">
                             <View
                               className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: MACRO_COLORS.fiber }}
+                              style={{ backgroundColor: colors.fiber }}
                             />
                             <Text className="text-muted-foreground text-xs">
                               Fi: {meal.totalFiberG.toFixed(1)}g
@@ -330,26 +328,25 @@ export default function HomeScreen() {
         </View>
       </Container>
 
-      {/* ═══ FAB (Agora com estilos Nativos para garantir a renderização) ═══ */}
+      {/* ── FAB ─────────────────────────────────── */}
       <View
         style={{
           position: "absolute",
-          bottom: insets.bottom + 24, // Note: If your TabBar is already taking up space, you might just need 'bottom: 24' or to add the TabBar height here.
+          bottom: insets.bottom + 24,
           right: 24,
-          zIndex: 50, // <-- Add this to fix rendering glitches
+          zIndex: 50,
         }}
       >
         <Pressable
           onPress={handleAddMeal}
           style={({ pressed }) => ({
-            width: 64, // Largura fixa
-            height: 64, // Altura fixa
-            borderRadius: 32, // Metade da largura/altura para ficar perfeitamente redondo
-            backgroundColor: "#f59e0b", // Cor verde (mesma do outro botão da tela)
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: "#f59e0b",
             alignItems: "center",
             justifyContent: "center",
-            opacity: pressed ? 0.8 : 1, // Efeito de clique
-            // Sombras para Android e iOS
+            opacity: pressed ? 0.8 : 1,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.35,

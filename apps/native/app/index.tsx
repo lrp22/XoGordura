@@ -1,14 +1,66 @@
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, useRootNavigationState } from "expo-router";
 import { Spinner } from "heroui-native";
+import { useEffect } from "react";
 import { Text, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { Container } from "@/components/container";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
+function PulsingEmoji() {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 800 }),
+        withTiming(1, { duration: 800 }),
+      ),
+      -1,
+      true,
+    );
+  }, [scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Text className="text-6xl">🍎</Text>
+    </Animated.View>
+  );
+}
+
+function LoadingScreen({ message }: { message: string }) {
+  return (
+    <Container isScrollable={false}>
+      <View className="flex-1 items-center justify-center gap-6">
+        <PulsingEmoji />
+        <Animated.View entering={FadeIn.delay(300).duration(500)}>
+          <Spinner size="lg" />
+        </Animated.View>
+        <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+          <Text className="text-muted-foreground text-lg font-medium">
+            {message}
+          </Text>
+        </Animated.View>
+      </View>
+    </Container>
+  );
+}
+
 export default function Gate() {
-  // 1. Add this hook
   const rootNavigationState = useRootNavigationState();
   const { data: session, isPending: authLoading } = authClient.useSession();
 
@@ -17,47 +69,25 @@ export default function Gate() {
     enabled: !!session?.user,
   });
 
-  // 2. CRITICAL FIX: Don't do anything until Expo Router is mounted
   if (!rootNavigationState?.key) {
     return null;
   }
 
-  // 3. Wait for auth to resolve
   if (authLoading) {
-    return (
-      <Container isScrollable={false}>
-        <View className="flex-1 items-center justify-center gap-4">
-          <Text className="text-4xl">🍎</Text>
-          <Spinner size="lg" />
-          <Text className="text-muted text-lg">Carregando...</Text>
-        </View>
-      </Container>
-    );
+    return <LoadingScreen message="Carregando..." />;
   }
 
-  // 4. Not logged in → auth screen
   if (!session?.user) {
     return <Redirect href="/(auth)" />;
   }
 
-  // 5. Wait for profile check
   if (profileQuery.isLoading) {
-    return (
-      <Container isScrollable={false}>
-        <View className="flex-1 items-center justify-center gap-4">
-          <Text className="text-4xl">🍎</Text>
-          <Spinner size="lg" />
-          <Text className="text-muted text-lg">Carregando...</Text>
-        </View>
-      </Container>
-    );
+    return <LoadingScreen message="Carregando perfil..." />;
   }
 
-  // 6. No profile → onboarding
   if (!profileQuery.data) {
     return <Redirect href="/onboarding" />;
   }
 
-  // 7. All good → main app
   return <Redirect href="/(tabs)" />;
 }

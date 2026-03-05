@@ -1,8 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Redirect } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
-
+import { Pressable, ScrollView, Text, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  FadeOut,
+  LinearTransition,
+} from "react-native-reanimated";
+import { Image } from "expo-image";
 import { Container } from "@/components/container";
 import { SignIn } from "@/components/sign-in";
 import { SignUp } from "@/components/sign-up";
@@ -19,7 +26,7 @@ export default function AuthScreen() {
   });
 
   if (!isPending && session?.user) {
-    if (profileQuery.isLoading) return null; // wait briefly
+    if (profileQuery.isLoading) return null;
     if (!profileQuery.data) return <Redirect href="/onboarding" />;
     return <Redirect href="/(tabs)" />;
   }
@@ -29,40 +36,65 @@ export default function AuthScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          justifyContent: "center",
+          justifyContent: "flex-start",
           padding: 24,
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="items-center mb-8">
-          <Text className="text-5xl mb-3">🍎</Text>
-          <Text className="text-foreground text-3xl font-bold">XoGordura</Text>
-          <Text className="text-muted text-lg mt-2">
+        {/* ── Branding ──────────────────────────── */}
+        <Animated.View
+          entering={FadeInDown.duration(600).springify()}
+          className="items-center mb-7"
+        >
+          <Image
+            source={require("@/assets/images/fitness-cat.png")}
+            style={{ width: 480, height: 180 }}
+            contentFit="contain" // Replaces resizeMode for expo-image
+            transition={1000} // Smoothly fades in the logo over 1s
+          />
+          <Text className="text-foreground text-4xl font-bold tracking-tight">
+            XoGordura
+          </Text>
+          <Text className="text-muted-foreground text-lg mt-2">
             Seu diário alimentar inteligente
           </Text>
-        </View>
+        </Animated.View>
 
-        {showSignIn ? (
-          <View className="gap-4">
-            <SignIn />
-            <Text
-              onPress={() => setShowSignIn(false)}
-              className="text-center text-muted text-base underline py-2"
+        {/* ── Form area ─────────────────────────── */}
+        <Animated.View layout={LinearTransition.springify()} className="gap-5">
+          {showSignIn ? (
+            <Animated.View
+              key="sign-in"
+              entering={FadeIn.duration(400)}
+              exiting={FadeOut.duration(200)}
             >
-              Não tem conta? Criar conta
-            </Text>
-          </View>
-        ) : (
-          <View className="gap-4">
-            <SignUp />
-            <Text
-              onPress={() => setShowSignIn(true)}
-              className="text-center text-muted text-base underline py-2"
+              <SignIn />
+            </Animated.View>
+          ) : (
+            <Animated.View
+              key="sign-up"
+              entering={FadeIn.duration(400)}
+              exiting={FadeOut.duration(200)}
             >
-              Já tem conta? Entrar
-            </Text>
-          </View>
-        )}
+              <SignUp />
+            </Animated.View>
+          )}
+
+          {/* ── Toggle link ─────────────────────── */}
+          <Animated.View entering={FadeInUp.delay(300).duration(500)}>
+            <Pressable
+              onPress={() => setShowSignIn((prev) => !prev)}
+              className="py-3 active:opacity-60"
+            >
+              <Text className="text-center text-muted-foreground text-base">
+                {showSignIn ? "Não tem conta? " : "Já tem conta? "}
+                <Text className="text-primary font-bold underline">
+                  {showSignIn ? "Criar conta" : "Entrar"}
+                </Text>
+              </Text>
+            </Pressable>
+          </Animated.View>
+        </Animated.View>
       </ScrollView>
     </Container>
   );

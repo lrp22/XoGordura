@@ -9,7 +9,8 @@
     "name": "XoGordura",
     "slug": "XoGordura",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

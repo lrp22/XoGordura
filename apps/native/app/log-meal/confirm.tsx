@@ -2,29 +2,37 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { Button, Spinner, Surface, useThemeColor } from "heroui-native";
+import { Spinner } from "heroui-native";
 import { useCallback, useMemo, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 
-import { Container } from "@/components/container";
 import { GlycemicBadge } from "@/components/glycemic-badge";
 import { type AnalyzedItem, useLogMeal } from "@/contexts/log-meal-context";
 import { getLocalToday, getMealTypeLabel } from "@/lib/date";
 import { queryClient, orpc } from "@/utils/orpc";
+import { ringColors } from "@/constants/ring-colors";
 
 // ─── Confidence badge ────────────────────────────────────
 function ConfidenceBadge({ level }: { level: string }) {
-  const colors: Record<string, { bg: string; text: string; label: string }> = {
-    high: { bg: "bg-success/20", text: "text-success", label: "Alta" },
-    medium: { bg: "bg-warning/20", text: "text-warning", label: "Média" },
-    low: { bg: "bg-danger/20", text: "text-danger", label: "Baixa" },
+  const configs: Record<string, { bg: string; text: string; label: string }> = {
+    high: { bg: "bg-success/15", text: "text-success", label: "Alta" },
+    medium: { bg: "bg-warning/15", text: "text-warning", label: "Média" },
+    low: { bg: "bg-danger/15", text: "text-danger", label: "Baixa" },
   };
-  const c = colors[level] ?? colors.medium;
+  const c = configs[level] ?? configs.medium;
   return (
-    <View className={`${c.bg} px-3 py-1 rounded-full`}>
-      <Text className={`${c.text} text-xs font-semibold`}>
-        Precisão: {c.label}
-      </Text>
+    <View
+      className={`${c.bg} px-3 py-1.5 rounded-full flex-row items-center gap-1.5`}
+    >
+      <View className={`w-1.5 h-1.5 rounded-full ${c.bg.replace("/15", "")}`} />
+      <Text className={`${c.text} text-xs font-bold`}>Precisão {c.label}</Text>
     </View>
   );
 }
@@ -38,12 +46,38 @@ function SourceDots({ sources }: { sources: string[] }) {
     ai_estimate: "IA",
   };
   return (
-    <View className="flex-row gap-1 flex-wrap">
+    <View className="flex-row gap-1.5 flex-wrap">
       {sources.map((source) => (
-        <View key={source} className="bg-muted/50 px-2 py-0.5 rounded">
-          <Text className="text-muted text-xs">{LABELS[source] ?? source}</Text>
+        <View key={source} className="bg-muted/40 px-2 py-0.5 rounded-md">
+          <Text className="text-muted-foreground text-xs font-medium">
+            {LABELS[source] ?? source}
+          </Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+// ─── Macro pill ──────────────────────────────────────────
+function MacroPill({
+  label,
+  value,
+  color,
+  bold,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  bold?: boolean;
+}) {
+  return (
+    <View className="items-center gap-0.5">
+      <Text
+        className={`text-base ${bold ? "text-primary" : "text-foreground"} font-bold`}
+      >
+        {value}
+      </Text>
+      <Text className="text-muted-foreground text-xs">{label}</Text>
     </View>
   );
 }
@@ -51,75 +85,97 @@ function SourceDots({ sources }: { sources: string[] }) {
 // ─── Food item card ──────────────────────────────────────
 function FoodItemCard({
   item,
+  index,
   onRemove,
   showDiabetesInfo,
 }: {
   item: AnalyzedItem;
+  index: number;
   onRemove: () => void;
   showDiabetesInfo: boolean;
 }) {
-  const dangerColor = useThemeColor("danger");
-
   return (
-    <Surface variant="secondary" className="p-4 rounded-xl">
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2 flex-wrap">
-            <Text className="text-foreground text-lg font-semibold">
-              {item.name}
+    <Animated.View
+      entering={FadeInDown.delay(index * 70)
+        .duration(400)
+        .springify()}
+    >
+      <View className="bg-card rounded-3xl p-4 border border-border">
+        {/* Top row */}
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="flex-1">
+            <View className="flex-row items-center gap-2 flex-wrap">
+              <Text className="text-foreground text-base font-bold">
+                {item.name}
+              </Text>
+              {showDiabetesInfo && (
+                <GlycemicBadge level={item.glycemicLoad} compact />
+              )}
+            </View>
+            <Text className="text-muted-foreground text-sm mt-0.5">
+              {item.portion}
             </Text>
-            {showDiabetesInfo && (
-              <GlycemicBadge level={item.glycemicLoad} compact />
-            )}
+            <View className="mt-2">
+              <SourceDots sources={item.sourcesUsed} />
+            </View>
           </View>
-          <Text className="text-muted text-sm mt-0.5">{item.portion}</Text>
-          <View className="mt-2">
-            <SourceDots sources={item.sourcesUsed} />
-          </View>
-        </View>
-        <View className="items-end gap-2">
-          <Text className="text-foreground text-xl font-bold">
-            {item.calories}
-          </Text>
-          <Text className="text-muted text-xs">kcal</Text>
-          <Pressable
-            onPress={onRemove}
-            hitSlop={12}
-            className="mt-1 p-1 active:opacity-50"
-          >
-            <Ionicons name="trash-outline" size={18} color={dangerColor} />
-          </Pressable>
-        </View>
-      </View>
 
-      {/* Macros row */}
-      <View className="flex-row gap-3 mt-3 pt-3 border-t border-muted/20 flex-wrap">
-        <Text className="text-muted text-xs">
-          P: {item.proteinG.toFixed(1)}g
-        </Text>
-        <Text className="text-muted text-xs">C: {item.carbsG.toFixed(1)}g</Text>
-        <Text className="text-muted text-xs">G: {item.fatG.toFixed(1)}g</Text>
-        {showDiabetesInfo && (
-          <>
-            <Text className="text-muted text-xs">
-              Fi: {item.fiberG.toFixed(1)}g
-            </Text>
-            <Text className="text-muted text-xs">
-              Aç: {item.sugarG.toFixed(1)}g
-            </Text>
-            <Text className="text-muted text-xs font-semibold">
-              Net: {item.netCarbsG.toFixed(1)}g
-            </Text>
-          </>
-        )}
+          {/* Calories + remove */}
+          <View className="items-end gap-2">
+            <View className="items-end">
+              <Text className="text-foreground text-2xl font-bold">
+                {item.calories}
+              </Text>
+              <Text className="text-muted-foreground text-xs">kcal</Text>
+            </View>
+            <Pressable
+              onPress={onRemove}
+              hitSlop={12}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              className="p-1.5 rounded-xl bg-danger/10"
+            >
+              <Ionicons name="trash-outline" size={15} color="#ef4444" />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Macros */}
+        <View className="flex-row gap-4 mt-3 pt-3 border-t border-border flex-wrap">
+          <Text className="text-muted-foreground text-xs font-medium">
+            P: {item.proteinG.toFixed(1)}g
+          </Text>
+          <Text className="text-muted-foreground text-xs font-medium">
+            C: {item.carbsG.toFixed(1)}g
+          </Text>
+          <Text className="text-muted-foreground text-xs font-medium">
+            G: {item.fatG.toFixed(1)}g
+          </Text>
+          {showDiabetesInfo && (
+            <>
+              <Text className="text-muted-foreground text-xs font-medium">
+                Fi: {item.fiberG.toFixed(1)}g
+              </Text>
+              <Text className="text-muted-foreground text-xs font-medium">
+                Aç: {item.sugarG.toFixed(1)}g
+              </Text>
+              <Text className="text-primary text-xs font-bold">
+                Net: {item.netCarbsG.toFixed(1)}g
+              </Text>
+            </>
+          )}
+        </View>
       </View>
-    </Surface>
+    </Animated.View>
   );
 }
 
-// ─── Main confirm screen ─────────────────────────────────
+// ─── Main screen ─────────────────────────────────────────
 export default function LogMealConfirm() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const scheme = useColorScheme();
+  const colors = ringColors[scheme === "dark" ? "dark" : "light"];
+
   const { mealType, voiceTranscript, analysisResult, reset } = useLogMeal();
   const profileQuery = useQuery(orpc.profile.get.queryOptions());
   const isDiabetic = profileQuery.data?.hasDiabetes ?? false;
@@ -128,19 +184,21 @@ export default function LogMealConfirm() {
     () => analysisResult?.items ?? [],
   );
 
-  const totals = useMemo(() => {
-    return items.reduce(
-      (acc, item) => ({
-        calories: acc.calories + item.calories,
-        proteinG: acc.proteinG + item.proteinG,
-        carbsG: acc.carbsG + item.carbsG,
-        fatG: acc.fatG + item.fatG,
-        fiberG: acc.fiberG + item.fiberG,
-        sugarG: acc.sugarG + item.sugarG,
-      }),
-      { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0 },
-    );
-  }, [items]);
+  const totals = useMemo(
+    () =>
+      items.reduce(
+        (acc, item) => ({
+          calories: acc.calories + item.calories,
+          proteinG: acc.proteinG + item.proteinG,
+          carbsG: acc.carbsG + item.carbsG,
+          fatG: acc.fatG + item.fatG,
+          fiberG: acc.fiberG + item.fiberG,
+          sugarG: acc.sugarG + item.sugarG,
+        }),
+        { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0 },
+      ),
+    [items],
+  );
 
   const netCarbsG = Math.max(0, totals.carbsG - totals.fiberG);
 
@@ -166,10 +224,8 @@ export default function LogMealConfirm() {
 
   function handleSave() {
     if (items.length === 0 || !analysisResult) return;
-    const today = getLocalToday();
-
     saveMutation.mutate({
-      date: today,
+      date: getLocalToday(),
       mealType: mealType as "breakfast" | "lunch" | "dinner" | "snack",
       voiceTranscript,
       items: items.map((item) => ({
@@ -196,183 +252,230 @@ export default function LogMealConfirm() {
     });
   }
 
+  // ─── No result fallback ───────────────────────────────
   if (!analysisResult) {
     return (
-      <Container isScrollable={false}>
-        <View className="flex-1 items-center justify-center px-6 gap-4">
-          <Text className="text-foreground text-xl">
-            Nenhum resultado encontrado
-          </Text>
-          <Button onPress={() => router.back()}>
-            <Button.Label>Voltar</Button.Label>
-          </Button>
-        </View>
-      </Container>
+      <View
+        className="flex-1 bg-background items-center justify-center px-6 gap-4"
+        style={{ paddingTop: insets.top }}
+      >
+        <Text className="text-5xl">🤷</Text>
+        <Text className="text-foreground text-xl font-bold text-center">
+          Nenhum resultado encontrado
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="bg-primary px-6 py-3 rounded-2xl"
+        >
+          <Text className="text-primary-foreground font-semibold">Voltar</Text>
+        </Pressable>
+      </View>
     );
   }
 
-  // ── Check for high-glycemic items (diabetic warning) ──
   const highGIItems = isDiabetic
     ? items.filter((i) => i.glycemicLoad === "high")
     : [];
 
   return (
-    <Container>
-      <View className="px-6 pt-4 pb-8 gap-5">
-        {/* Header */}
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-foreground text-2xl font-bold">
-              {getMealTypeLabel(mealType)}
-            </Text>
-            <Text className="text-muted text-sm mt-1">
-              {items.length} {items.length === 1 ? "item" : "itens"}{" "}
-              identificados
-            </Text>
-          </View>
-          <ConfidenceBadge level={analysisResult.overallConfidence} />
-        </View>
-
-        {/* AI Tip */}
-        {analysisResult.tip && (
-          <Surface
-            variant="secondary"
-            className="p-4 rounded-xl flex-row items-center gap-3"
-          >
-            <Text className="text-2xl">💡</Text>
-            <Text className="text-foreground text-base flex-1">
-              {analysisResult.tip}
-            </Text>
-          </Surface>
-        )}
-
-        {/* Diabetic warning for high-GI foods */}
-        {highGIItems.length > 0 && (
-          <Surface
-            variant="secondary"
-            className="p-4 rounded-xl flex-row items-start gap-3"
-            style={{ borderWidth: 1, borderColor: "#E53935" }}
-          >
-            <Text className="text-2xl">🩺</Text>
-            <View className="flex-1">
-              <Text className="text-danger text-sm font-bold mb-1">
-                Atenção — Índice glicêmico alto
-              </Text>
-              <Text className="text-muted text-xs">
-                {highGIItems.map((i) => i.name).join(", ")}{" "}
-                {highGIItems.length === 1 ? "pode causar" : "podem causar"}{" "}
-                picos de glicose. Considere trocar por versões integrais ou
-                combinar com fibras.
-              </Text>
-            </View>
-          </Surface>
-        )}
-
-        {/* Food items */}
-        <View className="gap-3">
-          {items.map((item, index) => (
-            <FoodItemCard
-              key={`${item.name}-${index}`}
-              item={item}
-              onRemove={() => handleRemoveItem(index)}
-              showDiabetesInfo={isDiabetic}
-            />
-          ))}
-        </View>
-
-        {items.length === 0 && (
-          <Surface variant="secondary" className="p-8 rounded-xl items-center">
-            <Text className="text-4xl mb-3">🤷</Text>
-            <Text className="text-foreground text-lg font-medium">
-              Todos os itens foram removidos
-            </Text>
-            <Text className="text-muted text-base mt-1">
-              Volte para analisar novamente
-            </Text>
-          </Surface>
-        )}
-
-        {/* Totals */}
-        {items.length > 0 && (
-          <Surface
-            variant="secondary"
-            className="p-5 rounded-xl"
-            style={{ borderWidth: 2, borderColor: "#4CAF50" }}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-foreground text-lg font-bold">Total</Text>
-              <Text className="text-foreground text-3xl font-bold">
-                {Math.round(totals.calories)} kcal
-              </Text>
-            </View>
-            <View className="flex-row justify-around">
-              <View className="items-center">
-                <Text className="text-foreground text-base font-semibold">
-                  {totals.proteinG.toFixed(1)}g
-                </Text>
-                <Text className="text-muted text-xs">Proteína</Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-foreground text-base font-semibold">
-                  {totals.carbsG.toFixed(1)}g
-                </Text>
-                <Text className="text-muted text-xs">Carboidratos</Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-foreground text-base font-semibold">
-                  {totals.fatG.toFixed(1)}g
-                </Text>
-                <Text className="text-muted text-xs">Gordura</Text>
-              </View>
-            </View>
-
-            {/* Diabetes-specific totals */}
-            {isDiabetic && (
-              <View className="flex-row justify-around mt-3 pt-3 border-t border-muted/20">
-                <View className="items-center">
-                  <Text className="text-foreground text-base font-semibold">
-                    {totals.sugarG.toFixed(1)}g
-                  </Text>
-                  <Text className="text-muted text-xs">Açúcar</Text>
-                </View>
-                <View className="items-center">
-                  <Text className="text-foreground text-base font-semibold">
-                    {totals.fiberG.toFixed(1)}g
-                  </Text>
-                  <Text className="text-muted text-xs">Fibra</Text>
-                </View>
-                <View className="items-center">
-                  <Text className="text-foreground text-base font-semibold">
-                    {netCarbsG.toFixed(1)}g
-                  </Text>
-                  <Text className="text-muted text-xs">Carb Líquido</Text>
-                </View>
-              </View>
-            )}
-          </Surface>
-        )}
-
-        {/* Error */}
-        {saveMutation.isError && (
-          <Text className="text-danger text-base text-center">
-            Erro ao salvar: {saveMutation.error?.message ?? "Tente novamente"}
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      {/* ── Header ───────────────────────────── */}
+      <Animated.View
+        entering={FadeInDown.duration(400)}
+        className="px-6 pt-4 pb-3 flex-row items-center justify-between"
+      >
+        <View>
+          <Text className="text-foreground text-3xl font-bold">
+            {getMealTypeLabel(mealType)}
           </Text>
-        )}
+          <Text className="text-muted-foreground text-sm mt-0.5">
+            {items.length} {items.length === 1 ? "item" : "itens"} identificados
+          </Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <ConfidenceBadge level={analysisResult.overallConfidence} />
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            className="w-9 h-9 rounded-2xl bg-muted/30 items-center justify-center ml-1"
+          >
+            <Ionicons name="close" size={18} color="#6b7280" />
+          </Pressable>
+        </View>
+      </Animated.View>
 
-        {/* Save */}
-        <Button
-          size="lg"
-          className="w-full h-16"
-          onPress={handleSave}
-          isDisabled={items.length === 0 || saveMutation.isPending}
-        >
-          {saveMutation.isPending ? (
-            <Spinner size="sm" color="default" />
-          ) : (
-            <Button.Label className="text-lg">✅ Salvar Refeição</Button.Label>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 16 }}
+      >
+        <View className="px-6 gap-4">
+          {/* ── AI tip ───────────────────────────── */}
+          {analysisResult.tip && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+              <View className="bg-card rounded-3xl p-4 flex-row items-start gap-3 border border-border">
+                <Text className="text-xl mt-0.5">💡</Text>
+                <Text className="text-foreground text-sm flex-1 leading-5">
+                  {analysisResult.tip}
+                </Text>
+              </View>
+            </Animated.View>
           )}
-        </Button>
-      </View>
-    </Container>
+
+          {/* ── Diabetic high-GI warning ──────────── */}
+          {highGIItems.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+              <View className="bg-danger/10 rounded-3xl p-4 flex-row items-start gap-3 border border-danger/30">
+                <Text className="text-xl mt-0.5">🩺</Text>
+                <View className="flex-1">
+                  <Text className="text-danger text-sm font-bold mb-1">
+                    Índice glicêmico alto
+                  </Text>
+                  <Text className="text-muted-foreground text-xs leading-5">
+                    {highGIItems.map((i) => i.name).join(", ")}{" "}
+                    {highGIItems.length === 1 ? "pode causar" : "podem causar"}{" "}
+                    picos de glicose. Combine com fibras para reduzir o impacto.
+                  </Text>
+                </View>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* ── Food items ───────────────────────── */}
+          <View className="gap-3">
+            {items.map((item, index) => (
+              <FoodItemCard
+                key={`${item.name}-${index}`}
+                item={item}
+                index={index}
+                onRemove={() => handleRemoveItem(index)}
+                showDiabetesInfo={isDiabetic}
+              />
+            ))}
+          </View>
+
+          {/* ── Empty state ──────────────────────── */}
+          {items.length === 0 && (
+            <Animated.View entering={FadeIn.duration(400)}>
+              <View className="bg-card rounded-3xl p-10 items-center gap-3 border border-border">
+                <Text className="text-5xl">🤷</Text>
+                <Text className="text-foreground text-lg font-bold text-center">
+                  Todos os itens removidos
+                </Text>
+                <Text className="text-muted-foreground text-sm text-center">
+                  Volte para analisar novamente
+                </Text>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* ── Totals card ──────────────────────── */}
+          {items.length > 0 && (
+            <Animated.View
+              entering={FadeInUp.delay(items.length * 70 + 80)
+                .duration(500)
+                .springify()}
+            >
+              <View className="bg-card rounded-3xl p-5 border-2 border-primary/30">
+                {/* Calorie hero */}
+                <View className="flex-row items-center justify-between mb-4">
+                  <Text
+                    className="text-foreground text-base font-bold uppercase tracking-wider"
+                    style={{ fontSize: 11 }}
+                  >
+                    Total da refeição
+                  </Text>
+                  <View className="bg-primary/10 px-4 py-1.5 rounded-2xl">
+                    <Text className="text-primary text-2xl font-bold">
+                      {Math.round(totals.calories)} kcal
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Main macros */}
+                <View className="flex-row justify-around py-3 bg-muted/20 rounded-2xl">
+                  <MacroPill
+                    label="Proteína"
+                    value={`${totals.proteinG.toFixed(1)}g`}
+                  />
+                  <View className="w-px bg-border" />
+                  <MacroPill
+                    label="Carboidratos"
+                    value={`${totals.carbsG.toFixed(1)}g`}
+                  />
+                  <View className="w-px bg-border" />
+                  <MacroPill
+                    label="Gordura"
+                    value={`${totals.fatG.toFixed(1)}g`}
+                  />
+                </View>
+
+                {/* Diabetic extras */}
+                {isDiabetic && (
+                  <View className="flex-row justify-around py-3 mt-2 border-t border-border">
+                    <MacroPill
+                      label="Açúcar"
+                      value={`${totals.sugarG.toFixed(1)}g`}
+                    />
+                    <MacroPill
+                      label="Fibra"
+                      value={`${totals.fiberG.toFixed(1)}g`}
+                    />
+                    <MacroPill
+                      label="Carb Líq."
+                      value={`${netCarbsG.toFixed(1)}g`}
+                      bold
+                    />
+                  </View>
+                )}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* ── Save error ───────────────────────── */}
+          {saveMutation.isError && (
+            <Animated.View entering={FadeIn.duration(300)}>
+              <View className="bg-destructive/10 rounded-2xl p-4 flex-row items-center gap-3 border border-destructive/30">
+                <Ionicons name="alert-circle" size={18} color="#ef4444" />
+                <Text className="text-destructive text-sm flex-1">
+                  {saveMutation.error?.message ??
+                    "Erro ao salvar. Tente novamente."}
+                </Text>
+              </View>
+            </Animated.View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* ── Save button (sticky footer) ──────── */}
+      <Animated.View
+        entering={FadeInUp.delay(300).duration(500).springify()}
+        style={{ paddingBottom: insets.bottom + 16 }}
+        className="px-6 pt-3 bg-background border-t border-border"
+      >
+        <Pressable
+          onPress={handleSave}
+          disabled={items.length === 0 || saveMutation.isPending}
+          style={({ pressed }) => ({
+            opacity: items.length === 0 ? 0.4 : pressed ? 0.8 : 1,
+          })}
+        >
+          <View className="bg-primary rounded-3xl h-16 items-center justify-center flex-row gap-3">
+            {saveMutation.isPending ? (
+              <Spinner size="sm" color="default" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={22} color="#fff" />
+                <Text
+                  style={{ color: "#fff", fontSize: 17, fontWeight: "700" }}
+                >
+                  Salvar Refeição
+                </Text>
+              </>
+            )}
+          </View>
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 }
