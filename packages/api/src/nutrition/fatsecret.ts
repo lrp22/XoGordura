@@ -25,7 +25,8 @@ async function getAccessToken(
   });
 
   if (!response.ok) {
-    throw new Error(`FatSecret auth failed: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`FatSecret auth failed: ${response.status} - ${errorText}`);
   }
 
   const data = (await response.json()) as {
