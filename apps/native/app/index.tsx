@@ -3,6 +3,7 @@ import { Redirect, useRootNavigationState } from "expo-router";
 import { Spinner } from "heroui-native";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
+import { Image } from "expo-image"; // <-- Add this import
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -17,13 +18,15 @@ import { Container } from "@/components/container";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
-function PulsingEmoji() {
+// Replace PulsingEmoji with PulsingLogo
+function PulsingLogo() {
   const scale = useSharedValue(1);
 
   useEffect(() => {
     scale.value = withRepeat(
       withSequence(
-        withTiming(1.2, { duration: 800 }),
+        // Slightly softer scale (1.1 instead of 1.2) looks better on larger images
+        withTiming(1.1, { duration: 800 }),
         withTiming(1, { duration: 800 }),
       ),
       -1,
@@ -37,7 +40,11 @@ function PulsingEmoji() {
 
   return (
     <Animated.View style={animatedStyle}>
-      <Text className="text-6xl">🍎</Text>
+      <Image
+        source={require("@/assets/images/fitness-cat.png")}
+        style={{ width: 160, height: 160 }}
+        contentFit="contain"
+      />
     </Animated.View>
   );
 }
@@ -46,7 +53,7 @@ function LoadingScreen({ message }: { message: string }) {
   return (
     <Container isScrollable={false}>
       <View className="flex-1 items-center justify-center gap-6">
-        <PulsingEmoji />
+        <PulsingLogo /> {/* <-- Use the new logo component here */}
         <Animated.View entering={FadeIn.delay(300).duration(500)}>
           <Spinner size="lg" />
         </Animated.View>

@@ -12,6 +12,8 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 const app = new Hono();
+const ip = await fetch("https://api.ipify.org").then((r) => r.text());
+console.log("Outbound IP:", ip);
 
 app.use(logger());
 app.use(

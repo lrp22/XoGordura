@@ -3,15 +3,20 @@
     "scheme": "XoGordura",
     "userInterfaceStyle": "automatic",
     "orientation": "default",
+
+    "icon": "./assets/images/cat-logo.png",
+    "splash": {
+      "image": "./assets/images/fitness-cat.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
     "web": {
       "bundler": "metro"
     },
     "name": "XoGordura",
     "slug": "XoGordura",
-    "plugins": [
-      "expo-font",
-      "expo-image"
-    ],
+    "plugins": ["expo-font", "expo-image"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
