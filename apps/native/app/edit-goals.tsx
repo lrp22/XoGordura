@@ -2,9 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { Button, Spinner, Surface, useThemeColor } from "heroui-native";
-import { useEffect, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Button, Spinner, useThemeColor } from "heroui-native";
+import { useEffect, useState, useCallback } from "react";
+import { Platform, Pressable, Text, View, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  LinearTransition,
+} from "react-native-reanimated";
 
 import { Container } from "@/components/container";
 import { NumberStepper } from "@/components/number-stepper";
@@ -13,6 +19,7 @@ import {
   calcCaloriesFromMacros,
   calcGoals,
   calcMacrosFromSplit,
+  calcAge,
   type ActivityLevel,
   type MacroPresetKey,
 } from "@/lib/calories";
@@ -53,6 +60,9 @@ const ACTIVITY_OPTIONS: {
   },
 ];
 
+/**
+ * Detects if the current macro gram values roughly match a known preset
+ */
 function detectPreset(
   calories: number,
   protein: number,
@@ -74,9 +84,10 @@ function detectPreset(
 
 export default function EditGoals() {
   const router = useRouter();
-  const primaryColor = useThemeColor("accent");
+  const insets = useSafeAreaInsets();
   const profileQuery = useQuery(orpc.profile.get.queryOptions());
 
+  // ─── State ─────────────────────────────────────────────────
   const [calories, setCalories] = useState<number>(1500);
   const [protein, setProtein] = useState<number>(100);
   const [fat, setFat] = useState<number>(50);
@@ -88,6 +99,7 @@ export default function EditGoals() {
   const [dailySugarLimitG, setDailySugarLimitG] = useState<number>(25);
   const [initialized, setInitialized] = useState(false);
 
+  // ─── Initialization ────────────────────────────────────────
   useEffect(() => {
     if (profileQuery.data && !initialized) {
       const p = profileQuery.data;
@@ -95,60 +107,61 @@ export default function EditGoals() {
       const pro = p.dailyProteinGoal ?? 100;
       const f = p.dailyFatGoal ?? 50;
       const c = p.dailyCarbsGoal ?? 150;
+
       setCalories(cal);
       setProtein(pro);
       setFat(f);
       setCarbs(c);
-      setActivePreset(detectPreset(cal, pro, f, c));
       setActivityLevel((p.activityLevel as ActivityLevel) ?? "sedentary");
       setHasDiabetes(p.hasDiabetes ?? false);
       setDailySugarLimitG(p.dailySugarLimitG ?? 25);
+      setActivePreset(detectPreset(cal, pro, f, c));
       setInitialized(true);
     }
   }, [profileQuery.data, initialized]);
 
-  // ── Recalculate calories + macros from profile biometrics ──
-  function recalcFromProfile(newLevel: ActivityLevel, preset: ActivePreset) {
-    const p = profileQuery.data;
-    if (!p?.heightCm || !p?.currentWeightKg || !p?.birthDate) return null;
+  // ─── Recalculation Logic ───────────────────────────────────
+  const recalcFromProfile = useCallback(
+    (newLevel: ActivityLevel, preset: ActivePreset) => {
+      const p = profileQuery.data;
+      if (!p?.heightCm || !p?.currentWeightKg || !p?.birthDate) return null;
 
-    const birthYear = Number.parseInt(p.birthDate.split("-")[0]!, 10);
-    const resolvedPreset: MacroPresetKey =
-      preset !== "custom" ? preset : "moderate";
-    const split = MACRO_PRESETS[resolvedPreset].split;
+      const birthYear = Number.parseInt(p.birthDate.split("-")[0]!, 10);
+      const resolvedPreset: MacroPresetKey =
+        preset !== "custom" ? preset : "moderate";
+      const split = MACRO_PRESETS[resolvedPreset].split;
 
-    return calcGoals(
-      p.currentWeightKg,
-      p.heightCm,
-      birthYear,
-      (p.gender as "male" | "female") ?? "female",
-      newLevel,
-      0.2,
-      split,
-    );
-  }
+      return calcGoals(
+        p.currentWeightKg,
+        p.heightCm,
+        birthYear,
+        (p.gender as "male" | "female") ?? "female",
+        newLevel,
+        0.2, // Defaulting to 20% deficit for auto-recalc
+        split,
+      );
+    },
+    [profileQuery.data],
+  );
 
-  // ── Activity level change → recalculate ────────────────
+  // ─── Handlers ──────────────────────────────────────────────
   function handleActivityChange(newLevel: ActivityLevel) {
-    if (Platform.OS !== "web") {
+    if (Platform.OS !== "web")
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
     setActivityLevel(newLevel);
 
     const results = recalcFromProfile(newLevel, activePreset);
-    if (!results) return;
-
-    setCalories(results.calories);
-    setProtein(results.protein);
-    setFat(results.fat);
-    setCarbs(results.carbs);
+    if (results) {
+      setCalories(results.calories);
+      setProtein(results.protein);
+      setFat(results.fat);
+      setCarbs(results.carbs);
+    }
   }
 
-  // ── Preset selection ────────────────────────────────────
   function selectPreset(key: MacroPresetKey) {
-    if (Platform.OS !== "web") {
+    if (Platform.OS !== "web")
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
     const macros = calcMacrosFromSplit(calories, MACRO_PRESETS[key].split);
     setProtein(macros.protein);
     setFat(macros.fat);
@@ -156,7 +169,6 @@ export default function EditGoals() {
     setActivePreset(key);
   }
 
-  // ── Calorie change → recalc macros if preset active ────
   function handleCaloriesChange(newCal: number) {
     setCalories(newCal);
     if (activePreset !== "custom") {
@@ -170,15 +182,12 @@ export default function EditGoals() {
     }
   }
 
-  // ── Diabetes toggle — mirrors onboarding logic exactly ─
   function toggleDiabetes(value: boolean) {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (Platform.OS !== "web")
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setHasDiabetes(value);
 
     if (value) {
-      // Enable diabetes: switch to lower_carb, set sugar limit
       setDailySugarLimitG(25);
       const macros = calcMacrosFromSplit(
         calories,
@@ -189,7 +198,6 @@ export default function EditGoals() {
       setCarbs(macros.carbs);
       setActivePreset("lower_carb");
     } else {
-      // Disable diabetes: revert to moderate preset
       const macros = calcMacrosFromSplit(
         calories,
         MACRO_PRESETS["moderate"].split,
@@ -201,15 +209,12 @@ export default function EditGoals() {
     }
   }
 
-  const macroCalories = calcCaloriesFromMacros(protein, carbs, fat);
-  const calorieDiff = macroCalories - calories;
-
+  // ─── Save Mutation ─────────────────────────────────────────
   const saveMutation = useMutation(
     orpc.profile.upsert.mutationOptions({
       onSuccess: async () => {
-        if (Platform.OS !== "web") {
+        if (Platform.OS !== "web")
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
         await queryClient.invalidateQueries();
         router.back();
       },
@@ -217,9 +222,6 @@ export default function EditGoals() {
   );
 
   function handleSave() {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
     saveMutation.mutate({
       dailyCalorieGoal: calories,
       dailyProteinGoal: protein,
@@ -231,337 +233,318 @@ export default function EditGoals() {
     });
   }
 
+  const macroCalories = calcCaloriesFromMacros(protein, carbs, fat);
+  const calorieDiff = macroCalories - calories;
+
   if (profileQuery.isLoading || !initialized) {
     return (
-      <Container isScrollable={false}>
-        <View className="flex-1 items-center justify-center gap-4">
-          <Spinner size="lg" />
-          <Text className="text-muted text-lg">Carregando...</Text>
-        </View>
-      </Container>
+      <View className="flex-1 bg-background items-center justify-center">
+        <Spinner size="lg" />
+      </View>
     );
   }
 
   return (
-    <Container>
-      <View className="px-6 pt-4 pb-8 gap-6">
-        {/* ── Activity Level ───────────────────── */}
-        <View>
-          <Text className="text-foreground text-xl font-bold mb-1">
-            Nível de Atividade
-          </Text>
-          <Text className="text-muted text-sm mb-3">
-            Recalcula suas calorias automaticamente
-          </Text>
-          <View className="gap-2">
-            {ACTIVITY_OPTIONS.map((opt) => {
-              const isSelected = activityLevel === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => handleActivityChange(opt.key)}
-                  className="active:opacity-80"
-                >
-                  <Surface
-                    variant="secondary"
-                    className="py-3 px-4 rounded-xl flex-row items-center gap-3"
-                    style={
-                      isSelected
-                        ? { borderWidth: 2, borderColor: primaryColor }
-                        : { borderWidth: 2, borderColor: "transparent" }
-                    }
-                  >
-                    <Text className="text-2xl">{opt.emoji}</Text>
-                    <View className="flex-1">
-                      <Text
-                        className={`text-base font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
-                      >
-                        {opt.label}
-                      </Text>
-                      <Text className="text-muted text-xs">
-                        {opt.description}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color={primaryColor}
-                      />
-                    )}
-                  </Surface>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* ── Diabetes Toggle ──────────────────── */}
-        <View>
-          <Text className="text-foreground text-xl font-bold mb-1">
-            Modo Diabetes 🩺
-          </Text>
-          <Text className="text-muted text-sm mb-3">
-            Ativa rastreamento de açúcar e carga glicêmica
-          </Text>
-          <View className="flex-row gap-3">
-            {[
-              { value: false, label: "NÃO", emoji: "👍" },
-              { value: true, label: "SIM", emoji: "🩺" },
-            ].map((opt) => (
-              <Pressable
-                key={String(opt.value)}
-                onPress={() => toggleDiabetes(opt.value)}
-                className="flex-1 active:opacity-80"
-              >
-                <Surface
-                  variant="secondary"
-                  className="py-5 rounded-xl items-center gap-1"
-                  style={
-                    hasDiabetes === opt.value
-                      ? { borderWidth: 2, borderColor: primaryColor }
-                      : { borderWidth: 2, borderColor: "transparent" }
-                  }
-                >
-                  <Text className="text-2xl">{opt.emoji}</Text>
-                  <Text
-                    className={`font-bold text-sm ${hasDiabetes === opt.value ? "text-primary" : "text-muted"}`}
-                  >
-                    {opt.label}
-                  </Text>
-                </Surface>
-              </Pressable>
-            ))}
-          </View>
-
-          {hasDiabetes && (
-            <View className="mt-4 gap-2">
-              <NumberStepper
-                label="Limite diário de açúcar"
-                unit="g"
-                value={dailySugarLimitG}
-                onChange={setDailySugarLimitG}
-                min={10}
-                max={100}
-                step={5}
-              />
-              <Text className="text-muted text-xs text-center">
-                OMS recomenda máx. 25g/dia para diabéticos
-              </Text>
-              <Surface
-                variant="secondary"
-                className="p-4 rounded-xl flex-row items-start gap-3 mt-1"
-              >
-                <Text className="text-2xl">💡</Text>
-                <View className="flex-1">
-                  <Text className="text-foreground text-sm font-medium mb-1">
-                    O que muda com diabetes ativo?
-                  </Text>
-                  <Text className="text-muted text-xs leading-5">
-                    • Rastreamento de açúcar e fibra{"\n"}• Indicador de carga
-                    glicêmica{"\n"}• Carboidratos líquidos (carbs - fibra){"\n"}
-                    • Distribuição Low Carb aplicada{"\n"}• Dicas da IA
-                    adaptadas
-                  </Text>
-                </View>
-              </Surface>
-            </View>
-          )}
-        </View>
-
-        {/* ── Calorie Goal ────────────────────── */}
-        <View>
-          <Text className="text-foreground text-xl font-bold mb-1">
-            Meta Calórica Diária
-          </Text>
-          <Text className="text-muted text-sm mb-2">
-            Ajuste manualmente se desejar
-          </Text>
-          <NumberStepper
-            label="Calorias"
-            unit="kcal"
-            value={calories}
-            onChange={handleCaloriesChange}
-            min={800}
-            max={5000}
-            step={25}
-          />
-        </View>
-
-        {/* ── Macro Presets ────────────────────── */}
-        <View>
-          <Text className="text-foreground text-xl font-bold mb-1">
-            Distribuição de Macros
-          </Text>
-          <Text className="text-muted text-sm mb-3">
-            Escolha um preset ou ajuste manualmente
-          </Text>
-          {hasDiabetes && (
-            <Text className="text-warning text-xs mb-3">
-              ⚠️ Recomendamos Low Carb para diabéticos
+    <View className="flex-1 bg-background">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+      >
+        <View className="px-6 pt-6 gap-8">
+          {/* ── Section: Activity ───────────────── */}
+          <Animated.View
+            entering={FadeInDown.delay(100)}
+            layout={LinearTransition}
+          >
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
+              Nível de Atividade
             </Text>
-          )}
-          <View className="flex-row gap-2 mb-4">
-            {PRESET_KEYS.map((key) => {
-              const preset = MACRO_PRESETS[key];
-              const isSelected = activePreset === key;
-              const isRecommended = hasDiabetes && key === "lower_carb";
-              return (
-                <Pressable
-                  key={key}
-                  onPress={() => selectPreset(key)}
-                  className="flex-1 active:opacity-80"
-                >
-                  <Surface
-                    variant="secondary"
-                    className="py-3 px-2 rounded-xl items-center"
-                    style={
-                      isSelected
-                        ? { borderWidth: 2, borderColor: primaryColor }
-                        : { borderWidth: 2, borderColor: "transparent" }
-                    }
+            <View className="gap-2">
+              {ACTIVITY_OPTIONS.map((opt) => {
+                const isSelected = activityLevel === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => handleActivityChange(opt.key)}
                   >
-                    <Text
-                      className={`text-sm font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
+                    <View
+                      className={`p-4 rounded-3xl flex-row items-center gap-4 border-2 transition-colors ${
+                        isSelected
+                          ? "bg-card border-primary"
+                          : "bg-muted/30 border-transparent"
+                      }`}
                     >
-                      {preset.label}
-                    </Text>
-                    <Text className="text-muted text-xs mt-0.5">
-                      {preset.tag}
-                    </Text>
-                    {isRecommended && (
-                      <View className="bg-success/20 px-1 py-0.5 rounded mt-1">
-                        <Text className="text-success" style={{ fontSize: 9 }}>
-                          Recomendado
+                      <View className="w-12 h-12 rounded-2xl bg-background items-center justify-center">
+                        <Text className="text-2xl">{opt.emoji}</Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className={`text-base font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
+                        >
+                          {opt.label}
+                        </Text>
+                        <Text className="text-muted-foreground text-xs">
+                          {opt.description}
                         </Text>
                       </View>
-                    )}
-                  </Surface>
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={24}
+                          color="#cb6441"
+                        />
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Animated.View>
+
+          {/* ── Section: Diabetes ───────────────── */}
+          <Animated.View
+            entering={FadeInDown.delay(200)}
+            layout={LinearTransition}
+          >
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
+              Monitoramento de Saúde 🩺
+            </Text>
+            <View className="flex-row gap-3">
+              {[
+                { val: false, label: "PADRÃO", emoji: "⚖️" },
+                { val: true, label: "DIABETES", emoji: "🩺" },
+              ].map((item) => (
+                <Pressable
+                  key={String(item.val)}
+                  onPress={() => toggleDiabetes(item.val)}
+                  className="flex-1"
+                >
+                  <View
+                    className={`py-5 rounded-3xl items-center border-2 transition-colors ${
+                      hasDiabetes === item.val
+                        ? "bg-card border-primary"
+                        : "bg-muted/30 border-transparent"
+                    }`}
+                  >
+                    <Text className="text-xl mb-1">{item.emoji}</Text>
+                    <Text
+                      className={`text-xs font-black tracking-widest ${
+                        hasDiabetes === item.val
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
                 </Pressable>
-              );
-            })}
-            <Pressable className="flex-1" disabled>
-              <Surface
-                variant="secondary"
-                className="py-3 px-2 rounded-xl items-center"
-                style={
+              ))}
+            </View>
+
+            {!!hasDiabetes && (
+              <Animated.View entering={FadeInUp} className="mt-4 gap-4">
+                <View className="bg-card rounded-3xl p-6 border border-border">
+                  <NumberStepper
+                    label="Limite de Açúcar"
+                    unit="g"
+                    value={dailySugarLimitG}
+                    onChange={setDailySugarLimitG}
+                    min={10}
+                    max={100}
+                    step={5}
+                  />
+                  <Text className="text-muted-foreground text-[10px] text-center uppercase tracking-widest mt-2">
+                    OMS recomenda máximo de 25g/dia
+                  </Text>
+                </View>
+              </Animated.View>
+            )}
+          </Animated.View>
+
+          {/* ── Section: Calorie Goal ────────────── */}
+          <Animated.View entering={FadeInDown.delay(300)}>
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
+              Meta Energética
+            </Text>
+            <View className="bg-card rounded-3xl p-8 border border-border items-center">
+              <NumberStepper
+                label="Calorias Diárias"
+                unit="kcal"
+                value={calories}
+                onChange={handleCaloriesChange}
+                min={800}
+                max={5000}
+                step={25}
+              />
+            </View>
+          </Animated.View>
+
+          {/* ── Section: Macros ──────────────────── */}
+          <Animated.View entering={FadeInDown.delay(400)}>
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
+              Distribuição de Macronutrientes
+            </Text>
+            <View className="flex-row gap-2 mb-4">
+              {PRESET_KEYS.map((key) => {
+                const isSelected = activePreset === key;
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => selectPreset(key)}
+                    className="flex-1"
+                  >
+                    <View
+                      className={`py-3 rounded-2xl items-center border-2 ${
+                        isSelected
+                          ? "bg-card border-primary"
+                          : "bg-muted/30 border-transparent"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[10px] font-black tracking-tighter ${
+                          isSelected ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {MACRO_PRESETS[key].label.toUpperCase()}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+              <View
+                className={`flex-1 py-3 rounded-2xl items-center border-2 ${
                   activePreset === "custom"
-                    ? { borderWidth: 2, borderColor: primaryColor }
-                    : { borderWidth: 2, borderColor: "transparent" }
-                }
+                    ? "bg-card border-primary"
+                    : "bg-muted/30 border-transparent"
+                }`}
               >
                 <Text
-                  className={`text-sm font-bold ${activePreset === "custom" ? "text-primary" : "text-foreground"}`}
+                  className={`text-[10px] font-black tracking-tighter ${
+                    activePreset === "custom"
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
                 >
-                  Custom
+                  MANUAL
                 </Text>
-                <Text className="text-muted text-xs mt-0.5">Manual</Text>
-              </Surface>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* ── Individual Macros ────────────────── */}
-        <View className="gap-2">
-          <NumberStepper
-            label="Proteína"
-            unit="g"
-            value={protein}
-            onChange={(v) => {
-              setProtein(v);
-              setActivePreset("custom");
-            }}
-            min={0}
-            max={500}
-            step={5}
-          />
-          <NumberStepper
-            label="Gordura"
-            unit="g"
-            value={fat}
-            onChange={(v) => {
-              setFat(v);
-              setActivePreset("custom");
-            }}
-            min={0}
-            max={300}
-            step={5}
-          />
-          <NumberStepper
-            label="Carboidratos"
-            unit="g"
-            value={carbs}
-            onChange={(v) => {
-              setCarbs(v);
-              setActivePreset("custom");
-            }}
-            min={0}
-            max={600}
-            step={5}
-          />
-        </View>
-
-        {/* ── Calorie reconciliation ──────────── */}
-        <Surface
-          variant="secondary"
-          className="p-4 rounded-xl"
-          style={
-            Math.abs(calorieDiff) > 50
-              ? { borderWidth: 1, borderColor: "#F59E0B" }
-              : {}
-          }
-        >
-          <View className="flex-row items-center justify-between">
-            <Text className="text-muted text-sm">Total dos macros:</Text>
-            <Text className="text-foreground text-lg font-bold">
-              {macroCalories} kcal
-            </Text>
-          </View>
-          <View className="flex-row items-center justify-between mt-1">
-            <Text className="text-muted text-sm">Meta definida:</Text>
-            <Text className="text-foreground text-lg font-bold">
-              {calories} kcal
-            </Text>
-          </View>
-          {!!(Math.abs(calorieDiff) > 50) && (
-            <View className="flex-row items-center gap-2 mt-2 pt-2 border-t border-muted/20">
-              <Ionicons name="warning-outline" size={16} color="#F59E0B" />
-              <Text className="text-warning text-xs flex-1">
-                Diferença de {Math.abs(calorieDiff)} kcal entre a meta e os
-                macros. Considere ajustar.
-              </Text>
+              </View>
             </View>
-          )}
-        </Surface>
 
-        {saveMutation.isError && (
-          <Text className="text-danger text-base text-center">
-            Erro ao salvar. Tente novamente.
-          </Text>
-        )}
+            <View className="bg-card rounded-3xl p-6 gap-2 border border-border">
+              <NumberStepper
+                label="Proteína"
+                unit="g"
+                value={protein}
+                onChange={(v) => {
+                  setProtein(v);
+                  setActivePreset("custom");
+                }}
+                min={0}
+                max={400}
+                step={5}
+              />
+              <View className="h-px bg-border my-2" />
+              <NumberStepper
+                label="Gordura"
+                unit="g"
+                value={fat}
+                onChange={(v) => {
+                  setFat(v);
+                  setActivePreset("custom");
+                }}
+                min={0}
+                max={200}
+                step={5}
+              />
+              <View className="h-px bg-border my-2" />
+              <NumberStepper
+                label="Carboidratos"
+                unit="g"
+                value={carbs}
+                onChange={(v) => {
+                  setCarbs(v);
+                  setActivePreset("custom");
+                }}
+                min={0}
+                max={600}
+                step={5}
+              />
+            </View>
+          </Animated.View>
 
-        <Button
-          size="lg"
-          className="w-full h-16"
-          onPress={handleSave}
-          isDisabled={saveMutation.isPending}
-        >
-          {saveMutation.isPending ? (
-            <Spinner size="sm" color="default" />
-          ) : (
-            <Button.Label className="text-lg">💾 Salvar Metas</Button.Label>
-          )}
-        </Button>
+          {/* ── Section: Summary ─────────────────── */}
+          <Animated.View entering={FadeInUp.delay(500)}>
+            <View
+              className={`p-6 rounded-3xl border-2 ${
+                Math.abs(calorieDiff) > 50
+                  ? "border-warning/40 bg-warning/5"
+                  : "border-primary/20 bg-primary/5"
+              }`}
+            >
+              <View className="flex-row justify-between items-center">
+                <Text className="text-muted-foreground text-xs font-bold uppercase tracking-widest">
+                  Total Macros
+                </Text>
+                <Text className="text-foreground font-bold text-xl">
+                  {macroCalories} kcal
+                </Text>
+              </View>
+              <View className="flex-row justify-between items-center mt-2">
+                <Text className="text-muted-foreground text-xs font-bold uppercase tracking-widest">
+                  Meta Definida
+                </Text>
+                <Text className="text-foreground font-bold text-xl">
+                  {calories} kcal
+                </Text>
+              </View>
 
-        <Button
-          size="lg"
-          variant="ghost"
-          className="w-full h-14"
-          onPress={() => router.back()}
-        >
-          <Button.Label className="text-base">Cancelar</Button.Label>
-        </Button>
-      </View>
-    </Container>
+              {!!(Math.abs(calorieDiff) > 50) && (
+                <View className="flex-row items-start gap-3 mt-4 pt-4 border-t border-warning/20">
+                  <Ionicons name="warning" size={18} color="#f59e0b" />
+                  <Text className="text-warning text-xs font-medium flex-1 leading-4">
+                    A soma dos macros diverge da meta em {Math.abs(calorieDiff)}{" "}
+                    kcal. Ajuste os valores para maior precisão.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Animated.View>
+
+          {/* ── Actions ─────────────────────────── */}
+          <View className="gap-3 mt-4">
+            {!!saveMutation.isError && (
+              <Text className="text-danger text-center font-bold mb-2">
+                Erro ao salvar. Tente novamente.
+              </Text>
+            )}
+            <Button
+              size="lg"
+              className="h-16 rounded-3xl bg-primary"
+              onPress={handleSave}
+              isDisabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? (
+                <Spinner color="default" />
+              ) : (
+                <Button.Label className="text-lg font-bold text-white">
+                  💾 Salvar Alterações
+                </Button.Label>
+              )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="lg"
+              className="h-14"
+              onPress={() => router.back()}
+            >
+              <Button.Label className="text-muted-foreground font-bold">
+                Cancelar
+              </Button.Label>
+            </Button>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
