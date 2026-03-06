@@ -99,7 +99,7 @@ function SignIn() {
         >
           {({ isSubmitting, validationError }) => (
             <>
-              {validationError && (
+              {!!validationError && (
                 <Animated.View entering={FadeInDown.duration(300)}>
                   <FieldError isInvalid className="mb-4">
                     {validationError}
@@ -117,6 +117,7 @@ function SignIn() {
                         onBlur={field.handleBlur}
                         onChangeText={field.handleChange}
                         placeholder="email@exemplo.com"
+                        placeholderTextColor="#43423f"
                         keyboardType="email-address"
                         autoCapitalize="none"
                         autoComplete="email"
@@ -141,6 +142,7 @@ function SignIn() {
                         onBlur={field.handleBlur}
                         onChangeText={field.handleChange}
                         placeholder="••••••••"
+                        placeholderTextColor="#43423f"
                         secureTextEntry
                         autoComplete="password"
                         textContentType="password"

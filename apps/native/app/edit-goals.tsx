@@ -523,7 +523,7 @@ export default function EditGoals() {
               {calories} kcal
             </Text>
           </View>
-          {Math.abs(calorieDiff) > 50 && (
+          {!!(Math.abs(calorieDiff) > 50) && (
             <View className="flex-row items-center gap-2 mt-2 pt-2 border-t border-muted/20">
               <Ionicons name="warning-outline" size={16} color="#F59E0B" />
               <Text className="text-warning text-xs flex-1">

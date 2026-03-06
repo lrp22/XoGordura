@@ -311,7 +311,7 @@ export default function LogMealConfirm() {
       >
         <View className="px-6 gap-4">
           {/* ── AI tip ───────────────────────────── */}
-          {analysisResult.tip && (
+          {!!analysisResult.tip && (
             <Animated.View entering={FadeInDown.delay(80).duration(400)}>
               <View className="bg-card rounded-3xl p-4 flex-row items-start gap-3 border border-border">
                 <Text className="text-xl mt-0.5">💡</Text>

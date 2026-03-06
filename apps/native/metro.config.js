@@ -11,7 +11,6 @@ const SERVER_ONLY_PACKAGES = [
   "@XoGordura/db",
   "@XoGordura/auth",
   "@neondatabase/serverless",
-  "better-auth",
   "drizzle-orm",
 ];
 

@@ -292,7 +292,7 @@ export default function HomeScreen() {
                           </View>
                         </>
                       )}
-                      {meal.aiTip && !isDiabetic && (
+                      {!!meal.aiTip && !isDiabetic && (
                         <Text
                           className="text-muted-foreground text-xs flex-1 text-right"
                           numberOfLines={1}

@@ -53,7 +53,7 @@ function LoadingScreen({ message }: { message: string }) {
   return (
     <Container isScrollable={false}>
       <View className="flex-1 items-center justify-center gap-6">
-        <PulsingLogo /> {/* <-- Use the new logo component here */}
+        <PulsingLogo />
         <Animated.View entering={FadeIn.delay(300).duration(500)}>
           <Spinner size="lg" />
         </Animated.View>

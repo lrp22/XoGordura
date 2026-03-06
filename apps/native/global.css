@@ -1,70 +1,68 @@
+/* apps/native/global.css */
 @import "tailwindcss";
 @import "uniwind";
 @import "heroui-native/styles";
 
 @source './node_modules/heroui-native/lib';
 
-/* ─── Theme variants ─────────────────────────────────────── */
 @layer theme {
   @variant light {
-    --background: oklch(0.9856 0.0084 56.3169);
-    --foreground: oklch(0.3353 0.0132 2.7676);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.3353 0.0132 2.7676);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.3353 0.0132 2.7676);
-    --primary: oklch(0.7357 0.1641 34.7091);
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.9596 0.02 28.9029);
-    --secondary-foreground: oklch(0.5587 0.1294 32.7364);
-    --muted: oklch(0.9656 0.0176 39.4009);
-    --muted-foreground: oklch(0.5534 0.0116 58.0708);
-    --accent: oklch(0.8278 0.1131 57.9984);
-    --accent-foreground: oklch(0.3353 0.0132 2.7676);
-    --destructive: oklch(0.6122 0.2082 22.241);
-    --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.9296 0.037 38.6868);
-    --input: oklch(0.9296 0.037 38.6868);
-    --ring: oklch(0.7357 0.1641 34.7091);
-    --success: oklch(0.52 0.17 155);
-    --warning: oklch(0.7 0.155 70);
-    --danger: oklch(0.53 0.24 25);
-    --ring-track: #e5e7eb;
-    --ring-success: #22c55e;
-    --ring-danger: #ef4444;
+    --background: #faf8f1;
+    --foreground: #312d1e;
+    --card: #eeece5;
+    --card-foreground: #141414;
+    --popover: #ffffff;
+    --popover-foreground: #29271b;
+    --primary: #cb6441;
+    --primary-foreground: #ffffff;
+    --secondary: #e7e4dd;
+    --secondary-foreground: #525044;
+    --muted: #f3f0e7;
+    --muted-foreground: #43423f;
+    --accent: #e7e4dd;
+    --accent-foreground: #29271b;
+    --destructive: #141414;
+    --destructive-foreground: #ffffff;
+    --border: #e1e1da;
+    --input: #b4b1a3;
+    --ring: #1b7ede;
+    /* Semantic helpers for rings/alerts */
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --ring-track: #e1e1da;
   }
 
   @variant dark {
-    --background: oklch(0.2569 0.0169 352.4042);
-    --foreground: oklch(0.9397 0.0119 51.3156);
-    --card: oklch(0.3184 0.0176 341.4465);
-    --card-foreground: oklch(0.9397 0.0119 51.3156);
-    --popover: oklch(0.3184 0.0176 341.4465);
-    --popover-foreground: oklch(0.9397 0.0119 51.3156);
-    --primary: oklch(0.7357 0.1641 34.7091);
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.3637 0.0203 342.2664);
-    --secondary-foreground: oklch(0.9397 0.0119 51.3156);
-    --muted: oklch(0.2848 0.0159 343.6554);
-    --muted-foreground: oklch(0.8378 0.0237 52.6346);
-    --accent: oklch(0.8278 0.1131 57.9984);
-    --accent-foreground: oklch(0.2569 0.0169 352.4042);
-    --destructive: oklch(0.6122 0.2082 22.241);
-    --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.3637 0.0203 342.2664);
-    --input: oklch(0.3637 0.0203 342.2664);
-    --ring: oklch(0.7357 0.1641 34.7091);
-    --success: oklch(0.68 0.19 155);
-    --warning: oklch(0.78 0.14 75);
-    --danger: oklch(0.62 0.22 25);
-    --ring-track: #374151;
-    --ring-success: #10b981;
-    --ring-danger: #f87171;
+    --background: #262626;
+    --foreground: #c3c1ba;
+    --card: #262626;
+    --card-foreground: #faf8f1;
+    --popover: #303030;
+    --popover-foreground: #e4e4e4;
+    --primary: #d87757;
+    --primary-foreground: #ffffff;
+    --secondary: #faf8f1;
+    --secondary-foreground: #303030;
+    --muted: #1b1b1b;
+    --muted-foreground: #b7b5a6;
+    --accent: #1a1813;
+    --accent-foreground: #f7f5ee;
+    --destructive: #f14444;
+    --destructive-foreground: #ffffff;
+    --border: #3e3e38;
+    --input: #51504a;
+    --ring: #1b7ede;
+    /* Semantic helpers for rings/alerts */
+    --success: #10b981;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --ring-track: #3e3e38;
   }
 }
 
-/* ─── Tailwind / Uniwind mapping ─────────────────────────── */
 @theme inline {
+  /* Mapping must use the --color- prefix for Tailwind/Uniwind to recognize them as utility classes */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -77,22 +75,11 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --color-ring-track: var(--ring-track);
-  --color-ring-success: var(--ring-success);
-  --color-ring-danger: var(--ring-danger);
-  --radius-lg: 0.75rem;
-}
-
-/* ─── Base reset ─────────────────────────────────────────── */
-@layer base {
-  * {
-    @apply border-border;
-  }
 }

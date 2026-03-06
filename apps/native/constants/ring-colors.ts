@@ -1,34 +1,24 @@
-// constants/ring-colors.ts
-// ─────────────────────────────────────────────────────────────
-// Single source of truth for all SVG ring colors in the app.
-// Keep in sync with the --ring-* variables in globals.css.
-// ─────────────────────────────────────────────────────────────
-
 export const ringColors = {
   light: {
-    // Calorie ring
-    track: "#809ed8",
+    track: "#e1e1da",
     success: "#22c55e",
     danger: "#ef4444",
-    // Macro rings
-    protein: "#3B82F6",
-    fat: "#F59E0B",
-    carbs: "#8B5CF6",
-    sugar: "#E53935",
-    fiber: "#4CAF50",
-    netCarbs: "#EC4899",
+    protein: "#cb6441", // Using your Primary
+    fat: "#b2572f", // Using your Chart-1
+    carbs: "#1b7ede", // Using your Ring color
+    sugar: "#141414", // Using your Destructive
+    fiber: "#b4b1a3", // Using your Input color
+    netCarbs: "#9c87f6", // Using your Chart-2
   },
   dark: {
-    // Calorie ring
-    track: "#374151",
+    track: "#3e3e38",
     success: "#10b981",
     danger: "#f87171",
-    // Macro rings
-    protein: "#60A5FA",
-    fat: "#FBD34D",
-    carbs: "#A78BFA",
-    sugar: "#F87171",
-    fiber: "#34D399",
-    netCarbs: "#F472B6",
+    protein: "#d87757", // Using your Primary Dark
+    fat: "#b2572f",
+    carbs: "#1b7ede",
+    sugar: "#f14444",
+    fiber: "#51504a",
+    netCarbs: "#9c87f6",
   },
 } as const;

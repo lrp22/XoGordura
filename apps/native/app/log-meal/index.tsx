@@ -244,7 +244,7 @@ export default function LogMealInput() {
               >
                 O que você comeu?
               </Text>
-              {voiceTranscript.length > 0 && (
+              {!!voiceTranscript.length && (
                 <Text className="text-muted-foreground text-xs">
                   {voiceTranscript.length} caracteres
                 </Text>
