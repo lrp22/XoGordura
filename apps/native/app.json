@@ -28,6 +28,12 @@
     },
     "ios": {
       "bundleIdentifier": "com.anonymous.XoGordura"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e1e7e1c5-3ddc-4377-9cf1-d5df7b31b53c"
+      }
     }
   }
 }
