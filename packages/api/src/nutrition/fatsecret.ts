@@ -41,19 +41,16 @@ async function getAccessToken(
 }
 
 /**
- * FIX 1 & 5: Parse the FatSecret food_description string into all nutrients.
+ * Parse the FatSecret food_description string into all nutrients.
  *
- * The description can arrive in either pt-BR or en formats, e.g.:
- *   "Per 100g - Calorias: 128kcal | Gordura: 0,20g | Carbs: 28,10g | Prot: 2,50g"
- *   "Per 100g - Calories: 128kcal | Fat: 0.20g | Carbs: 28.10g | Protein: 2.50g"
+ * FatSecret pt-BR format (basic scope):
+ *   "Por 100g - Calorias: 89kcal | Gord.: 0,33g | Carbs: 22,84g | Prot.: 1,09g"
  *
- * Fiber and sugar are not always present in the basic description, but when the
- * premier scope is granted they can appear as:
- *   "| Fiber: 1.5g | Sugar: 2.0g"  or  "| Fibra: 1,5g | Açúcar: 2,0g"
+ * FatSecret en format:
+ *   "Per 100g - Calories: 89kcal | Fat: 0.33g | Carbs: 22.84g | Protein: 1.09g"
  *
- * The function now returns fiberG and sugarG (defaulting to 0 when absent),
- * which fixes the missing-field bug in the NutritionSource return value and
- * gives diabetic users real fiber/net-carb data whenever FatSecret provides it.
+ * Fiber and sugar only present with premier scope:
+ *   "| Fiber: 1.5g | Sugar: 2.0g"  /  "| Fibra: 1,5g | Açúcar: 2,0g"
  */
 function parseDescription(desc: string): {
   servingG: number;
@@ -61,42 +58,44 @@ function parseDescription(desc: string): {
   fatG: number;
   carbsG: number;
   proteinG: number;
-  /** Dietary fibre in grams — 0 when not present in the description */
   fiberG: number;
-  /** Total sugars in grams — 0 when not present in the description */
   sugarG: number;
 } | null {
   try {
-    // ── Serving size ────────────────────────────────────────
-    const servingMatch = desc.match(/Per\s+([\d,.]+)\s*(g|ml)/i);
+    // ── Serving size — handles both "Per 100g" and "Por 100g" ──
+    const servingMatch = desc.match(/(?:Per|Por)\s+.*?([\d,.]+)\s*(?:g|ml)/i);
     const servingG = servingMatch
       ? Number.parseFloat(servingMatch[1]!.replace(",", "."))
       : 100;
 
-    // ── Helper: extract a numeric value from a labelled field ──
     function extract(pattern: RegExp): number {
       const m = desc.match(pattern);
       return m ? Number.parseFloat(m[1]!.replace(",", ".")) : 0;
     }
 
-    // ── Core macros (pt-BR and en labels) ───────────────────
-    const calories = extract(/Cal(?:orias?)?:\s*([\d,.]+)/i);
-    const fatG = extract(/(?:Gordura|Fat):\s*([\d,.]+)/i);
-    const carbsG = extract(/Carbs?:\s*([\d,.]+)/i);
-    const proteinG = extract(/Prot(?:eína?|ein)?:\s*([\d,.]+)/i);
-
-    // ── FIX 5: Fiber and sugar — present with premier scope ─
-    // Accepted labels:  Fiber / Fibra / Dietary Fiber / Fibra Alimentar
-    //                   Sugar / Açúcar / Sugars / Açúcares
-    const fiberG = extract(
-      /(?:Dietary\s+)?Fib(?:er|ra)(?:\s+Alimentar)?:\s*([\d,.]+)/i,
+    // ── Core macros — handles full words, abbreviations, dots ──
+    const calories = extract(/(?:Calorias|Calories|Cal\.?)\s*:\s*([\d,.]+)/i);
+    const fatG = extract(/(?:Gordura|Gord\.?|Fat)\s*:\s*([\d,.]+)/i);
+    const carbsG = extract(
+      /(?:Carboidratos|Carbs?\.?|Carb\.?)\s*:\s*([\d,.]+)/i,
     );
-    const sugarG = extract(/A(?:ç|c)(?:ú|u)cares?|Sugars?:\s*([\d,.]+)/i);
+    const proteinG = extract(
+      /(?:Prote[íi]nas?|Protein|Prot\.?)\s*:\s*([\d,.]+)/i,
+    );
 
-    if (calories === 0) return null; // malformed description
+    // ── Fiber & sugar — only present with premier scope ────────
+    const fiberG = extract(
+      /(?:Dietary\s+)?Fib(?:er|ra)(?:\s+Alimentar)?\s*:\s*([\d,.]+)/i,
+    );
+    const sugarG = extract(
+      /(?:A(?:ç|c)(?:ú|u)cares?|Sugars?)\s*:\s*([\d,.]+)/i,
+    );
+
+    if (calories === 0) return null; // malformed / unrecognised format
 
     return { servingG, calories, fatG, carbsG, proteinG, fiberG, sugarG };
-  } catch {
+  } catch (e) {
+    console.warn("[FatSecret] parseDescription error:", desc, e);
     return null;
   }
 }
@@ -112,6 +111,7 @@ export async function searchFatSecret(
   try {
     const token = await getAccessToken(clientId, clientSecret);
     console.log("[FatSecret] got token, calling API...");
+
     const params = new URLSearchParams({
       search_expression: query,
       format: "json",
@@ -130,28 +130,33 @@ export async function searchFatSecret(
       },
     );
 
+    console.log("[FatSecret] response status:", response.status);
     if (!response.ok) return null;
 
-    const data = (await response.json()) as {
-      foods_search?: { results?: { food?: { food_description?: string }[] } };
-    };
-    const foods = data?.foods_search?.results?.food;
-    if (!foods || foods.length === 0) return null;
+    const data = (await response.json()) as any;
+    console.log("[FatSecret] raw data:", JSON.stringify(data).slice(0, 500));
 
+    // FatSecret returns { foods: { food: [] } } — NOT foods_search.results.food
+    const foods = data?.foods?.food;
+    console.log(
+      "[FatSecret] foods found:",
+      Array.isArray(foods) ? foods.length : foods ? 1 : 0,
+    );
+    if (!foods) return null;
+
+    // Single result comes back as an object, not an array
     const best = Array.isArray(foods) ? foods[0]! : foods;
-    const desc = best.food_description;
+    console.log("[FatSecret] food_description:", best?.food_description);
+
+    const desc = best?.food_description;
     if (!desc) return null;
 
     const parsed = parseDescription(desc);
+    console.log("[FatSecret] parsed:", parsed);
     if (!parsed) return null;
 
-    // Scale all nutrients from the description's serving size to the
-    // requested portion.
     const scale = portionG / parsed.servingG;
 
-    // FIX 1: fiberG and sugarG are now always present on the returned object,
-    // satisfying the NutritionSource interface without any `(result as any)`
-    // workaround in the pipeline.
     return {
       source: "fatsecret",
       calories: Math.round(parsed.calories * scale),
@@ -161,7 +166,7 @@ export async function searchFatSecret(
       fiberG: +(parsed.fiberG * scale).toFixed(1),
       sugarG: +(parsed.sugarG * scale).toFixed(1),
       portionG,
-      confidence: 0, // set by pipeline based on food type
+      confidence: 0, // assigned by pipeline based on food type
     };
   } catch (error) {
     console.warn("[FatSecret] lookup failed:", error);
