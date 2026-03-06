@@ -7,6 +7,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppThemeProvider } from "@/contexts/app-theme-context";
 import { queryClient } from "@/utils/orpc";
+import { View } from "react-native";
 
 export default function RootLayout() {
   console.count("RootLayout render");
@@ -17,6 +18,7 @@ export default function RootLayout() {
           <KeyboardProvider>
             <AppThemeProvider>
               <HeroUINativeProvider>
+                <View className="hidden bg-accent text-accent border-accent bg-success text-success bg-warning text-warning bg-danger text-danger bg-ring" />
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="index" />
                   <Stack.Screen name="(auth)" />

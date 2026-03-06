@@ -104,9 +104,10 @@ export async function searchFatSecret(
   clientId: string,
   clientSecret: string,
 ): Promise<NutritionSource | null> {
+  console.log("[FatSecret] searching for:", query);
   try {
     const token = await getAccessToken(clientId, clientSecret);
-
+    console.log("[FatSecret] got token, calling API...");
     const params = new URLSearchParams({
       search_expression: query,
       format: "json",

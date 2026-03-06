@@ -48,6 +48,9 @@ async function lookupFoodItem(
   // ── Source 1: TACO (instant, local) ────────────────
   if (item.type === "basic") {
     const tacoResults = searchTaco(item.name);
+    console.log(
+      `[Pipeline] TACO "${item.name}": ${tacoResults.length} results`,
+    );
     if (tacoResults.length > 0) {
       const best = tacoResults[0]!;
       const scaled = scaleTaco(best, portionG);
@@ -77,12 +80,16 @@ async function lookupFoodItem(
   // ── Source 2: FatSecret (API call) ─────────────────
   if (config.fatSecretClientId && config.fatSecretClientSecret) {
     const searchQuery = item.brand ? `${item.brand} ${item.name}` : item.name;
+    console.log(
+      `[Pipeline] FatSecret calling for: "${searchQuery}" (type: ${item.type})`,
+    );
     const result = await searchFatSecret(
       searchQuery,
       portionG,
       config.fatSecretClientId,
       config.fatSecretClientSecret,
     );
+    console.log(`[Pipeline] FatSecret result: ${result ? "hit ✓" : "miss ✗"}`);
     if (result) {
       sources.push(
         assignConfidence(
@@ -94,6 +101,11 @@ async function lookupFoodItem(
           item.type,
         ),
       );
+    } else {
+      console.log("[Pipeline] FatSecret SKIPPED — missing env vars:", {
+        hasId: !!config.fatSecretClientId,
+        hasSecret: !!config.fatSecretClientSecret,
+      });
     }
   }
 

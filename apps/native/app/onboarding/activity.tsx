@@ -324,7 +324,7 @@ export default function OnboardingActivity() {
             isDisabled={isSaving}
           >
             {isSaving ? (
-              <Spinner color="primary" />
+              <Spinner />
             ) : (
               <Button.Label className="text-lg">Começar Agora! 🚀</Button.Label>
             )}
