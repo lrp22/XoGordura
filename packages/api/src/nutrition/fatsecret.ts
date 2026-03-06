@@ -21,7 +21,7 @@ async function getAccessToken(
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Basic ${btoa(`${id}:${secret}`)}`,
     },
-    body: "grant_type=client_credentials&scope=basic premier",
+    body: "grant_type=client_credentials&scope=basic",
   });
 
   if (!response.ok) {
