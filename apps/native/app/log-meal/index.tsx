@@ -120,7 +120,7 @@ export default function LogMealInput() {
       >
         <Animated.View entering={ZoomIn.duration(500).springify()}>
           <View className="w-24 h-24 rounded-3xl bg-primary/10 items-center justify-center">
-            <Spinner size="lg" />
+            <Spinner size="lg" color="primary" />
           </View>
         </Animated.View>
 

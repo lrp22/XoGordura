@@ -55,7 +55,7 @@ export default function LogWeight() {
     return (
       <Container isScrollable={false}>
         <View className="flex-1 items-center justify-center gap-4">
-          <Spinner size="lg" />
+          <Spinner size="lg" color="primary" />
           <Text className="text-muted-foreground text-lg">
             Carregando perfil...
           </Text>
@@ -114,7 +114,7 @@ export default function LogWeight() {
             isDisabled={saveMutation.isPending}
           >
             {saveMutation.isPending ? (
-              <Spinner size="sm" color="default" />
+              <Spinner size="sm" color="primary" />
             ) : (
               <Button.Label className="text-lg">Salvar Peso</Button.Label>
             )}

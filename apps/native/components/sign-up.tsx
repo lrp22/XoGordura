@@ -191,7 +191,7 @@ export function SignUp() {
                   className="mt-2 h-14 bg-primary"
                 >
                   {isSubmitting ? (
-                    <Spinner size="sm" color="default" />
+                    <Spinner size="sm" color="primary" />
                   ) : (
                     <Button.Label className="text-base font-bold">
                       Criar Conta

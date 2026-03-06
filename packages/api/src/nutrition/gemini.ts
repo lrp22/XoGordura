@@ -209,3 +209,63 @@ export async function parseWithAI(
     `All AI models failed:\n${errors.map((e) => `  - ${e}`).join("\n")}`,
   );
 }
+
+// packages/api/src/nutrition/gemini.ts
+
+export async function generateMacroSuggestion(
+  remaining: {
+    remCalories: number;
+    remProtein: number;
+    remCarbs: number;
+    remFat: number;
+  },
+  isDiabetic: boolean,
+  apiKey: string,
+) {
+  const prompt = `Você é um nutricionista brasileiro focado em bater macros. O usuário do app precisa de uma sugestão de prato ou lanche prático para fechar o dia.
+  
+  Faltam aproximadamente:
+  - ${remaining.remCalories} kcal
+  - ${remaining.remProtein}g de proteína
+  - ${remaining.remCarbs}g de carboidrato
+  - ${remaining.remFat}g de gordura
+
+  Condição do usuário: ${isDiabetic ? "TEM DIABETES (foco em baixo índice glicêmico, sem açúcar, mais fibras)." : "Sem restrições médicas."}
+
+  Sugira UMA única opção prática, usando ingredientes típicos do Brasil, que se encaixe o MAIS PRÓXIMO POSSÍVEL nesses valores restantes.
+  
+  Responda APENAS com um JSON válido neste formato:
+  {
+    "title": "Nome criativo do lanche/refeição",
+    "description": "Explicação simples com as quantidades exatas para atingir os macros.",
+    "macros": "Aprox: X kcal | P: Xg | C: Xg | G: Xg"
+  }`;
+
+  // Using the fastest model for this quick suggestion
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+        },
+      }),
+    },
+  );
+
+  if (!response.ok) throw new Error("Gemini API error in suggestion");
+
+  const data = (await response.json()) as any;
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Empty response");
+
+  return JSON.parse(text) as {
+    title: string;
+    description: string;
+    macros: string;
+  };
+}

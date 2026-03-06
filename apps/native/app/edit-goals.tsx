@@ -524,7 +524,7 @@ export default function EditGoals() {
               isDisabled={saveMutation.isPending}
             >
               {saveMutation.isPending ? (
-                <Spinner color="default" />
+                <Spinner color="primary" />
               ) : (
                 <Button.Label className="text-lg font-bold text-white">
                   💾 Salvar Alterações

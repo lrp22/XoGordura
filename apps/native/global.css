@@ -62,7 +62,6 @@
 }
 
 @theme inline {
-  /* Mapping must use the --color- prefix for Tailwind/Uniwind to recognize them as utility classes */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -73,8 +72,11 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+
+  /* CRITICAL: Ensure this is mapped */
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -82,4 +84,6 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+
+  --radius-lg: 0.5rem;
 }

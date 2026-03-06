@@ -81,7 +81,7 @@ export default function ProgressScreen() {
 
               {weightQuery.isLoading ? (
                 <View className="items-center py-6">
-                  <Spinner size="lg" />
+                  <Spinner size="lg" color="primary" />
                 </View>
               ) : latest ? (
                 <View>

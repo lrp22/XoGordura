@@ -55,7 +55,7 @@ function LoadingScreen({ message }: { message: string }) {
       <View className="flex-1 items-center justify-center gap-6">
         <PulsingLogo />
         <Animated.View entering={FadeIn.delay(300).duration(500)}>
-          <Spinner size="lg" />
+          <Spinner size="lg" color="primary" />
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(500).duration(500)}>
           <Text className="text-muted-foreground text-lg font-medium">

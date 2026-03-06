@@ -462,7 +462,7 @@ export default function LogMealConfirm() {
         >
           <View className="bg-primary rounded-3xl h-16 items-center justify-center flex-row gap-3">
             {saveMutation.isPending ? (
-              <Spinner size="sm" color="default" />
+              <Spinner size="sm" color="primary" />
             ) : (
               <>
                 <Ionicons name="checkmark-circle" size={22} color="#fff" />

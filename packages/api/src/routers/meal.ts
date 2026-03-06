@@ -6,6 +6,7 @@ import z from "zod";
 
 import { protectedProcedure } from "../index";
 import { analyzeMeal } from "../nutrition";
+import { generateMacroSuggestion } from "../nutrition/gemini";
 
 const dateString = z
   .string()
@@ -48,6 +49,26 @@ export const mealRouter = {
               : "Erro ao analisar refeição",
         });
       }
+    }),
+
+  suggestSnack: protectedProcedure
+    .input(
+      z.object({
+        remCalories: z.number(),
+        remProtein: z.number(),
+        remCarbs: z.number(),
+        remFat: z.number(),
+        isDiabetic: z.boolean(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: "API key missing",
+        });
+      }
+      return await generateMacroSuggestion(input, input.isDiabetic, apiKey);
     }),
 
   getByDate: protectedProcedure

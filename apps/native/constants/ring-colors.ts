@@ -1,6 +1,6 @@
 export const ringColors = {
   light: {
-    track: "#e1e1da",
+    track: "#CACAC3",
     success: "#22c55e",
     danger: "#ef4444",
     protein: "#cb6441", // Using your Primary

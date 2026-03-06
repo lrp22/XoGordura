@@ -84,7 +84,7 @@ export default function ProfileScreen() {
         className="flex-1 bg-background items-center justify-center"
         style={{ paddingTop: insets.top }}
       >
-        <Spinner size="lg" />
+        <Spinner size="lg" color="primary" />
       </View>
     );
   }
