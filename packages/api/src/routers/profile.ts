@@ -35,6 +35,7 @@ export const profileRouter = {
         gender: z.enum(["male", "female"]).optional(),
         heightCm: z.number().min(50).max(250).optional(),
         currentWeightKg: z.number().min(20).max(500).optional(),
+        // FIX 2: goalWeightKg is now accepted and persisted
         goalWeightKg: z.number().min(20).max(500).optional(),
         dailyCalorieGoal: z.number().int().min(800).max(5000).optional(),
         dailyProteinGoal: z.number().int().min(0).optional(),
@@ -48,6 +49,9 @@ export const profileRouter = {
           .optional()
           .nullable(),
         activityLevel: activityLevelSchema.optional(),
+        // FIX 3: deficitPercentage is now accepted and persisted so that
+        // edit-goals can recalculate with the user's original choice
+        deficitPercentage: z.number().min(0.05).max(0.5).optional(),
         hasDiabetes: z.boolean().optional(),
         diabetesType: diabetesTypeSchema.optional().nullable(),
       }),
@@ -70,6 +74,7 @@ export const profileRouter = {
           dailyFatGoal: input.dailyFatGoal,
           dailySugarLimitG: input.dailySugarLimitG,
           activityLevel: input.activityLevel,
+          deficitPercentage: input.deficitPercentage,
           hasDiabetes: input.hasDiabetes,
           diabetesType: input.diabetesType,
         })
@@ -80,7 +85,9 @@ export const profileRouter = {
               birthDate: input.birthDate,
             }),
             ...(input.gender !== undefined && { gender: input.gender }),
-            ...(input.heightCm !== undefined && { heightCm: input.heightCm }),
+            ...(input.heightCm !== undefined && {
+              heightCm: input.heightCm,
+            }),
             ...(input.currentWeightKg !== undefined && {
               currentWeightKg: input.currentWeightKg,
             }),
@@ -105,12 +112,16 @@ export const profileRouter = {
             ...(input.activityLevel !== undefined && {
               activityLevel: input.activityLevel,
             }),
+            ...(input.deficitPercentage !== undefined && {
+              deficitPercentage: input.deficitPercentage,
+            }),
             ...(input.hasDiabetes !== undefined && {
               hasDiabetes: input.hasDiabetes,
             }),
             ...(input.diabetesType !== undefined && {
               diabetesType: input.diabetesType,
             }),
+            updatedAt: new Date(),
           },
         })
         .returning();

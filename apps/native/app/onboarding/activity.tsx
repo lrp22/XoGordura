@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Button, Surface, Spinner } from "heroui-native"; // Removed useThemeColor
+import { Button, Surface, Spinner } from "heroui-native";
 import { Text, View, Pressable } from "react-native";
 import Animated, {
   FadeInDown,
@@ -73,24 +73,32 @@ export default function OnboardingActivity() {
 
   async function handleComplete() {
     const today = new Date().toISOString().split("T")[0];
+
     await saveProfile.mutateAsync({
       birthDate: `${data.birthYear}-01-01`,
       gender: data.gender,
       heightCm: data.heightCm,
       currentWeightKg: data.currentWeightKg,
+      // FIX 2: goalWeightKg is now passed and persisted
+      goalWeightKg: data.goalWeightKg,
       dailyCalorieGoal: results.calories,
       dailyProteinGoal: results.protein,
       dailyCarbsGoal: results.carbs,
       dailyFatGoal: results.fat,
       activityLevel: data.activityLevel,
+      // FIX 3: deficitPercentage is now saved so edit-goals can use
+      // the user's original choice rather than always defaulting to 20%
+      deficitPercentage: data.deficitPercentage,
       hasDiabetes: data.hasDiabetes,
       diabetesType: data.diabetesType,
       dailySugarLimitG: data.dailySugarLimitG,
     });
+
     await saveWeight.mutateAsync({
       date: today,
       weightKg: data.currentWeightKg,
     });
+
     await queryClient.invalidateQueries();
     router.replace("/(tabs)");
   }
@@ -127,7 +135,6 @@ export default function OnboardingActivity() {
                   >
                     <Surface
                       variant="secondary"
-                      // FIX: Conditional border color classes
                       className={`py-3.5 px-4 rounded-2xl bg-card flex-row items-center gap-3 border-2 transition-colors ${
                         isSelected ? "border-accent" : "border-transparent"
                       }`}
@@ -195,7 +202,6 @@ export default function OnboardingActivity() {
                   >
                     <Surface
                       variant="secondary"
-                      // FIX: Conditional border color classes
                       className={`p-4 bg-card rounded-2xl border-2 transition-colors ${
                         isSelected ? "border-accent" : "border-transparent"
                       }`}
@@ -263,7 +269,6 @@ export default function OnboardingActivity() {
           <Animated.View entering={FadeIn.delay(800).duration(500)}>
             <Surface
               variant="secondary"
-              // FIX: Always show the accent border for the summary card
               className="p-5 rounded-2xl gap-3 border-2 border-accent"
             >
               <View className="items-center border-b border-border pb-3">

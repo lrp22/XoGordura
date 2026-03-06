@@ -28,7 +28,6 @@ export default function OnboardingBody() {
 
   return (
     <Container>
-      {/* Added bg-background for consistency */}
       <View className="flex-1 px-6 pt-16 pb-8 justify-between bg-background">
         <View>
           <Animated.View entering={FadeInDown.duration(500)}>
@@ -37,6 +36,7 @@ export default function OnboardingBody() {
             </Text>
           </Animated.View>
 
+          {/* Current weight */}
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             <NumberStepper
               label="Peso Atual"
@@ -50,7 +50,22 @@ export default function OnboardingBody() {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+          {/* FIX 2: goal weight is now collected and will be saved to the DB */}
+          <Animated.View entering={FadeInDown.delay(180).duration(500)}>
+            <NumberStepper
+              label="Peso Desejado"
+              unit="kg"
+              value={data.goalWeightKg}
+              onChange={(v) => update({ goalWeightKg: v })}
+              min={30}
+              max={250}
+              step={0.1}
+              decimals={1}
+            />
+          </Animated.View>
+
+          {/* Height */}
+          <Animated.View entering={FadeInDown.delay(260).duration(500)}>
             <NumberStepper
               label="Altura"
               unit="cm"
@@ -62,7 +77,8 @@ export default function OnboardingBody() {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(300).duration(500)}>
+          {/* Deficit intensity */}
+          <Animated.View entering={FadeInDown.delay(340).duration(500)}>
             <Text className="text-foreground text-lg font-bold mt-6 mb-4">
               Intensidade da Dieta (Déficit)
             </Text>
@@ -77,7 +93,6 @@ export default function OnboardingBody() {
                   >
                     <Surface
                       variant="secondary"
-                      // FIX: Using border-accent class instead of style/oklch hook
                       className={`py-5 bg-card rounded-2xl items-center gap-1 border-2 transition-colors ${
                         isSelected ? "border-accent" : "border-transparent"
                       }`}

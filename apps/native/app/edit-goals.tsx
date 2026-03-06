@@ -60,9 +60,28 @@ const ACTIVITY_OPTIONS: {
   },
 ];
 
-/**
- * Detects if the current macro gram values roughly match a known preset
- */
+// FIX 3: deficit options are now surfaced in the UI so users can change them,
+// and the saved value is read from the profile instead of being hardcoded.
+const DEFICIT_OPTIONS: {
+  value: number;
+  label: string;
+  emoji: string;
+  description: string;
+}[] = [
+  {
+    value: 0.1,
+    label: "MODERADA",
+    emoji: "🐢",
+    description: "-10% das calorias",
+  },
+  {
+    value: 0.2,
+    label: "AGRESSIVA",
+    emoji: "🐇",
+    description: "-20% das calorias",
+  },
+];
+
 function detectPreset(
   calories: number,
   protein: number,
@@ -87,7 +106,7 @@ export default function EditGoals() {
   const insets = useSafeAreaInsets();
   const profileQuery = useQuery(orpc.profile.get.queryOptions());
 
-  // ─── State ─────────────────────────────────────────────────
+  // ─── State ─────────────────────────────────────────────
   const [calories, setCalories] = useState<number>(1500);
   const [protein, setProtein] = useState<number>(100);
   const [fat, setFat] = useState<number>(50);
@@ -95,11 +114,13 @@ export default function EditGoals() {
   const [activePreset, setActivePreset] = useState<ActivePreset>("custom");
   const [activityLevel, setActivityLevel] =
     useState<ActivityLevel>("sedentary");
+  // FIX 3: deficit percentage is now state, initialised from the profile
+  const [deficitPercentage, setDeficitPercentage] = useState<number>(0.2);
   const [hasDiabetes, setHasDiabetes] = useState(false);
   const [dailySugarLimitG, setDailySugarLimitG] = useState<number>(25);
   const [initialized, setInitialized] = useState(false);
 
-  // ─── Initialization ────────────────────────────────────────
+  // ─── Initialization ────────────────────────────────────
   useEffect(() => {
     if (profileQuery.data && !initialized) {
       const p = profileQuery.data;
@@ -113,6 +134,9 @@ export default function EditGoals() {
       setFat(f);
       setCarbs(c);
       setActivityLevel((p.activityLevel as ActivityLevel) ?? "sedentary");
+      // FIX 3: read the stored deficit — fall back to 0.2 for existing users
+      // who were saved before this field existed
+      setDeficitPercentage(p.deficitPercentage ?? 0.2);
       setHasDiabetes(p.hasDiabetes ?? false);
       setDailySugarLimitG(p.dailySugarLimitG ?? 25);
       setActivePreset(detectPreset(cal, pro, f, c));
@@ -120,9 +144,11 @@ export default function EditGoals() {
     }
   }, [profileQuery.data, initialized]);
 
-  // ─── Recalculation Logic ───────────────────────────────────
+  // ─── Recalculation Logic ───────────────────────────────
+  // FIX 3: recalcFromProfile now uses the actual deficitPercentage from state
+  // instead of the hardcoded 0.2 that was here before.
   const recalcFromProfile = useCallback(
-    (newLevel: ActivityLevel, preset: ActivePreset) => {
+    (newLevel: ActivityLevel, preset: ActivePreset, deficit: number) => {
       const p = profileQuery.data;
       if (!p?.heightCm || !p?.currentWeightKg || !p?.birthDate) return null;
 
@@ -137,20 +163,39 @@ export default function EditGoals() {
         birthYear,
         (p.gender as "male" | "female") ?? "female",
         newLevel,
-        0.2, // Defaulting to 20% deficit for auto-recalc
+        deficit, // ← was hardcoded 0.2
         split,
       );
     },
     [profileQuery.data],
   );
 
-  // ─── Handlers ──────────────────────────────────────────────
+  // ─── Handlers ──────────────────────────────────────────
   function handleActivityChange(newLevel: ActivityLevel) {
     if (Platform.OS !== "web")
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActivityLevel(newLevel);
 
-    const results = recalcFromProfile(newLevel, activePreset);
+    const results = recalcFromProfile(
+      newLevel,
+      activePreset,
+      deficitPercentage,
+    );
+    if (results) {
+      setCalories(results.calories);
+      setProtein(results.protein);
+      setFat(results.fat);
+      setCarbs(results.carbs);
+    }
+  }
+
+  // FIX 3: changing the deficit recalculates goals immediately
+  function handleDeficitChange(newDeficit: number) {
+    if (Platform.OS !== "web")
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDeficitPercentage(newDeficit);
+
+    const results = recalcFromProfile(activityLevel, activePreset, newDeficit);
     if (results) {
       setCalories(results.calories);
       setProtein(results.protein);
@@ -209,7 +254,7 @@ export default function EditGoals() {
     }
   }
 
-  // ─── Save Mutation ─────────────────────────────────────────
+  // ─── Save Mutation ─────────────────────────────────────
   const saveMutation = useMutation(
     orpc.profile.upsert.mutationOptions({
       onSuccess: async () => {
@@ -228,6 +273,8 @@ export default function EditGoals() {
       dailyCarbsGoal: carbs,
       dailyFatGoal: fat,
       activityLevel,
+      // FIX 3: persist the (possibly changed) deficit so future recalcs are correct
+      deficitPercentage,
       hasDiabetes,
       dailySugarLimitG: hasDiabetes ? dailySugarLimitG : null,
     });
@@ -301,9 +348,52 @@ export default function EditGoals() {
             </View>
           </Animated.View>
 
+          {/* ── Section: Deficit ────────────────── */}
+          {/* FIX 3: deficit selector is now shown so users can change it */}
+          <Animated.View
+            entering={FadeInDown.delay(160)}
+            layout={LinearTransition}
+          >
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
+              Intensidade do Déficit
+            </Text>
+            <View className="flex-row gap-3">
+              {DEFICIT_OPTIONS.map((opt) => {
+                const isSelected = deficitPercentage === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => handleDeficitChange(opt.value)}
+                    className="flex-1"
+                  >
+                    <View
+                      className={`py-5 rounded-3xl items-center border-2 transition-colors ${
+                        isSelected
+                          ? "bg-card border-primary"
+                          : "bg-muted/30 border-transparent"
+                      }`}
+                    >
+                      <Text className="text-xl mb-1">{opt.emoji}</Text>
+                      <Text
+                        className={`text-xs font-black tracking-widest ${
+                          isSelected ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {opt.label}
+                      </Text>
+                      <Text className="text-muted-foreground text-[10px] mt-1">
+                        {opt.description}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Animated.View>
+
           {/* ── Section: Diabetes ───────────────── */}
           <Animated.View
-            entering={FadeInDown.delay(200)}
+            entering={FadeInDown.delay(220)}
             layout={LinearTransition}
           >
             <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
