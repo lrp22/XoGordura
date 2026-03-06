@@ -66,8 +66,8 @@ export default function HomeScreen() {
   const remCarbs = Math.max(0, goals.carbs - consumed.carbs);
   const remFat = Math.max(0, goals.fat - consumed.fat);
 
-  const canSuggest =
-    consumed.calories > 0 && remCalories > 50 && remCalories < 1000;
+  // Logic: Show AI suggestion if user has started eating and has at least 50 kcal left
+  const canSuggest = consumed.calories > 0 && remCalories > 50;
 
   // ─── Handlers ───────────────────────────────────
   function handleAddMeal() {
@@ -325,25 +325,6 @@ export default function HomeScreen() {
                   </Card>
                 ))}
 
-                <Pressable
-                  onPress={handleAddMeal}
-                  className="active:opacity-70 mt-1"
-                >
-                  <Surface
-                    variant="secondary"
-                    className="p-4 rounded-3xl flex-row items-center justify-center gap-2 border-2 border-dashed border-border bg-transparent"
-                  >
-                    <Ionicons
-                      name="add-circle-outline"
-                      size={20}
-                      color={colors.protein}
-                    />
-                    <Text className="text-foreground text-sm font-bold">
-                      Adicionar refeição
-                    </Text>
-                  </Surface>
-                </Pressable>
-
                 {/* ✨ NEW AI SUGGESTION BLOCK ✨ */}
                 {!!canSuggest && (
                   <View className="mt-3">
@@ -356,7 +337,9 @@ export default function HomeScreen() {
                         <Text className="text-3xl">✨</Text>
                         <View className="flex-1">
                           <Text className="text-primary font-bold text-base">
-                            Completar os macros?
+                            {remCalories > 800
+                              ? "Sugestão de Refeição?"
+                              : "Fechar os macros?"}
                           </Text>
                           <Text className="text-muted-foreground text-xs mt-0.5 leading-4">
                             Peça para a IA sugerir o que comer para fechar as{" "}

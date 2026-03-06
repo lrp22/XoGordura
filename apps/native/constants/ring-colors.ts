@@ -3,8 +3,8 @@ export const ringColors = {
     track: "#CACAC3",
     success: "#22c55e",
     danger: "#ef4444",
-    protein: "#cb6441", // Using your Primary
-    fat: "#b2572f", // Using your Chart-1
+    protein: "#E97E5B", // Using your Primary
+    fat: "#C75321", // Using your Chart-1
     carbs: "#1b7ede", // Using your Ring color
     sugar: "#141414", // Using your Destructive
     fiber: "#b4b1a3", // Using your Input color
@@ -14,11 +14,11 @@ export const ringColors = {
     track: "#3e3e38",
     success: "#10b981",
     danger: "#f87171",
-    protein: "#d87757", // Using your Primary Dark
-    fat: "#b2572f",
+    protein: "#E97E5B", // Using your Primary Dark
+    fat: "#C75321",
     carbs: "#1b7ede",
     sugar: "#f14444",
-    fiber: "#51504a",
+    fiber: "#b4b1a3",
     netCarbs: "#9c87f6",
   },
 } as const;
