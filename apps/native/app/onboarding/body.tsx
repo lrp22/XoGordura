@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Button, Surface } from "heroui-native";
+import { Button } from "heroui-native";
 import { Text, View, Pressable } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
@@ -36,50 +36,37 @@ export default function OnboardingBody() {
             </Text>
           </Animated.View>
 
-          {/* Current weight */}
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
-            <NumberStepper
-              label="Peso Atual"
-              unit="kg"
-              value={data.currentWeightKg}
-              onChange={(v) => update({ currentWeightKg: v })}
-              min={30}
-              max={250}
-              step={0.1}
-              decimals={1}
-            />
+            <View className="bg-card rounded-3xl p-5 border border-border mb-4">
+              <NumberStepper
+                label="Peso Atual"
+                unit="kg"
+                value={data.currentWeightKg}
+                onChange={(v) => update({ currentWeightKg: v })}
+                min={30}
+                max={250}
+                step={0.1}
+                decimals={1}
+              />
+            </View>
           </Animated.View>
 
-          {/* FIX 2: goal weight is now collected and will be saved to the DB */}
-          <Animated.View entering={FadeInDown.delay(180).duration(500)}>
-            <NumberStepper
-              label="Peso Desejado"
-              unit="kg"
-              value={data.goalWeightKg}
-              onChange={(v) => update({ goalWeightKg: v })}
-              min={30}
-              max={250}
-              step={0.1}
-              decimals={1}
-            />
+          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <View className="bg-card rounded-3xl p-5 border border-border">
+              <NumberStepper
+                label="Altura"
+                unit="cm"
+                value={data.heightCm}
+                onChange={(v) => update({ heightCm: v })}
+                min={100}
+                max={220}
+                step={1}
+              />
+            </View>
           </Animated.View>
 
-          {/* Height */}
-          <Animated.View entering={FadeInDown.delay(260).duration(500)}>
-            <NumberStepper
-              label="Altura"
-              unit="cm"
-              value={data.heightCm}
-              onChange={(v) => update({ heightCm: v })}
-              min={100}
-              max={220}
-              step={1}
-            />
-          </Animated.View>
-
-          {/* Deficit intensity */}
-          <Animated.View entering={FadeInDown.delay(340).duration(500)}>
-            <Text className="text-foreground text-lg font-bold mt-6 mb-4">
+          <Animated.View entering={FadeInDown.delay(300).duration(500)}>
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mt-6 mb-4 px-1">
               Intensidade da Dieta (Déficit)
             </Text>
             <View className="flex-row gap-4">
@@ -91,24 +78,19 @@ export default function OnboardingBody() {
                     onPress={() => update({ deficitPercentage: opt.value })}
                     className="flex-1 active:scale-95"
                   >
-                    <Surface
-                      variant="secondary"
-                      className={`py-5 bg-card rounded-2xl items-center gap-1 border-2 transition-colors ${
-                        isSelected ? "border-accent" : "border-transparent"
-                      }`}
+                    <View
+                      className={`py-5 rounded-3xl items-center border-2 transition-colors ${isSelected ? "bg-card border-primary" : "bg-muted/30 border-transparent"}`}
                     >
-                      <Text className="text-2xl mb-1">{opt.emoji}</Text>
+                      <Text className="text-3xl mb-2">{opt.emoji}</Text>
                       <Text
-                        className={`font-bold ${
-                          isSelected ? "text-primary" : "text-foreground"
-                        }`}
+                        className={`font-bold text-xs tracking-widest uppercase ${isSelected ? "text-primary" : "text-foreground"}`}
                       >
                         {opt.label}
                       </Text>
-                      <Text className="text-muted-foreground text-xs mt-0.5">
+                      <Text className="text-muted-foreground text-xs mt-1">
                         {opt.description}
                       </Text>
-                    </Surface>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -119,10 +101,12 @@ export default function OnboardingBody() {
         <Animated.View entering={FadeInUp.delay(500).duration(600).springify()}>
           <Button
             size="lg"
-            className="h-16"
+            className="h-16 rounded-3xl bg-primary"
             onPress={() => router.push("/onboarding/activity" as any)}
           >
-            <Button.Label className="text-lg">Próximo →</Button.Label>
+            <Button.Label className="text-lg font-bold text-white">
+              Próximo →
+            </Button.Label>
           </Button>
         </Animated.View>
       </View>

@@ -1,12 +1,15 @@
+// apps/native/app/log-meal/_layout.tsx
 import { Stack } from "expo-router";
-import { useThemeColor } from "heroui-native";
-
+import { useAppTheme } from "@/contexts/app-theme-context";
 import { LogMealProvider } from "@/contexts/log-meal-context";
 
 export default function LogMealLayout() {
-  const foregroundColor = useThemeColor("foreground");
-  const backgroundColor = useThemeColor("background");
-  console.log("Background Color:", backgroundColor);
+  const { isLight } = useAppTheme();
+  
+  // Explicitly map your theme colors
+  const backgroundColor = isLight ? "#faf8f1" : "#262626";
+  const foregroundColor = isLight ? "#3d3826" : "#c3c1ba";
+
   return (
     <LogMealProvider>
       <Stack

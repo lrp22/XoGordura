@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Button, Surface } from "heroui-native";
+import { Button } from "heroui-native";
 import { Text, View, Pressable } from "react-native";
 import Animated, {
   FadeInDown,
@@ -78,7 +78,7 @@ export default function OnboardingHealth() {
 
           {/* ── Diabetes toggle ───────────────── */}
           <Animated.View entering={FadeInDown.delay(150).duration(500)}>
-            <Text className="text-foreground text-lg font-bold mb-4">
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-4 px-1">
               Você tem diabetes?
             </Text>
             <View className="flex-row gap-4 mb-6">
@@ -93,32 +93,26 @@ export default function OnboardingHealth() {
                     onPress={() => toggleDiabetes(opt.value)}
                     className="flex-1 active:scale-95"
                   >
-                    <Surface
-                      variant="secondary"
-                      // FIX: Using conditional border classes instead of style prop
-                      className={`py-5 bg-card rounded-2xl items-center gap-1 border-2 transition-colors ${
-                        isSelected ? "border-accent" : "border-transparent"
-                      }`}
+                    <View
+                      className={`py-5 rounded-3xl items-center border-2 transition-colors ${isSelected ? "bg-card border-primary" : "bg-muted/30 border-transparent"}`}
                     >
-                      <Text className="text-2xl">{opt.emoji}</Text>
+                      <Text className="text-3xl mb-2">{opt.emoji}</Text>
                       <Text
-                        className={`font-bold text-base ${
-                          isSelected ? "text-primary" : "text-muted-foreground"
-                        }`}
+                        className={`font-bold text-xs tracking-widest uppercase ${isSelected ? "text-primary" : "text-muted-foreground"}`}
                       >
                         {opt.label}
                       </Text>
-                    </Surface>
+                    </View>
                   </Pressable>
                 );
               })}
             </View>
           </Animated.View>
 
-          {/* ── Diabetes type (only if yes) ──── */}
-          {data.hasDiabetes && (
+          {/* ── Diabetes details (only if yes) ──── */}
+          {!!data.hasDiabetes && (
             <Animated.View entering={FadeIn.duration(400)} className="gap-4">
-              <Text className="text-foreground text-lg font-bold">
+              <Text className="text-foreground text-xs font-bold uppercase tracking-wider px-1">
                 Qual tipo?
               </Text>
               <View className="gap-2">
@@ -135,22 +129,12 @@ export default function OnboardingHealth() {
                         onPress={() => update({ diabetesType: type.key })}
                         className="active:scale-[0.98]"
                       >
-                        <Surface
-                          variant="secondary"
-                          // FIX: Removed style prop, added border-accent logic
-                          className={`py-3.5 px-4 rounded-2xl flex-row items-center gap-3 border-2 transition-colors ${
-                            isTypeSelected
-                              ? "border-accent"
-                              : "border-transparent"
-                          }`}
+                        <View
+                          className={`py-4 px-5 rounded-3xl flex-row items-center border-2 transition-colors ${isTypeSelected ? "bg-card border-primary" : "bg-muted/30 border-transparent"}`}
                         >
                           <View className="flex-1">
                             <Text
-                              className={`text-base font-bold ${
-                                isTypeSelected
-                                  ? "text-primary"
-                                  : "text-foreground"
-                              }`}
+                              className={`text-base font-bold ${isTypeSelected ? "text-primary" : "text-foreground"}`}
                             >
                               {type.label}
                             </Text>
@@ -158,7 +142,7 @@ export default function OnboardingHealth() {
                               {type.description}
                             </Text>
                           </View>
-                        </Surface>
+                        </View>
                       </Pressable>
                     </Animated.View>
                   );
@@ -166,33 +150,29 @@ export default function OnboardingHealth() {
               </View>
 
               {/* ── Sugar limit ──────────────── */}
-              <Animated.View
-                entering={FadeInDown.delay(250).duration(400)}
-                className="mt-4"
-              >
-                <NumberStepper
-                  label="Limite diário de açúcar"
-                  unit="g"
-                  value={data.dailySugarLimitG ?? 25}
-                  onChange={(v) => update({ dailySugarLimitG: v })}
-                  min={10}
-                  max={100}
-                  step={5}
-                />
-                <Text className="text-muted-foreground text-xs text-center mt-2">
-                  OMS recomenda máx. 25g/dia para diabéticos
-                </Text>
+              <Animated.View entering={FadeInDown.delay(250).duration(400)}>
+                <View className="bg-card rounded-3xl p-5 border border-border mt-2">
+                  <NumberStepper
+                    label="Limite diário de açúcar"
+                    unit="g"
+                    value={data.dailySugarLimitG ?? 25}
+                    onChange={(v) => update({ dailySugarLimitG: v })}
+                    min={10}
+                    max={100}
+                    step={5}
+                  />
+                  <Text className="text-muted-foreground text-xs text-center mt-2 font-medium">
+                    OMS recomenda máx. 25g/dia para diabéticos
+                  </Text>
+                </View>
               </Animated.View>
 
-              {/* ── Info card ────────────────── */}
+              {/* ── Info card (Restored!) ────────────────── */}
               <Animated.View entering={FadeInDown.delay(350).duration(400)}>
-                <Surface
-                  variant="secondary"
-                  className="p-4 rounded-2xl flex-row items-start gap-3 mt-2 border border-border"
-                >
-                  <Text className="text-2xl">💡</Text>
+                <View className="bg-card p-5 rounded-3xl flex-row items-start gap-4 border border-border mt-2">
+                  <Text className="text-2xl mt-1">💡</Text>
                   <View className="flex-1">
-                    <Text className="text-foreground text-sm font-semibold mb-1">
+                    <Text className="text-foreground text-sm font-bold mb-2">
                       O que muda para diabéticos?
                     </Text>
                     <Text className="text-muted-foreground text-xs leading-5">
@@ -203,7 +183,7 @@ export default function OnboardingHealth() {
                       adaptadas para controle glicêmico
                     </Text>
                   </View>
-                </Surface>
+                </View>
               </Animated.View>
             </Animated.View>
           )}
@@ -212,10 +192,12 @@ export default function OnboardingHealth() {
         <Animated.View entering={FadeInUp.delay(400).duration(600).springify()}>
           <Button
             size="lg"
-            className="h-16 mt-6"
+            className="h-16 mt-6 rounded-3xl bg-primary"
             onPress={() => router.push("/onboarding/body" as any)}
           >
-            <Button.Label className="text-lg">Próximo →</Button.Label>
+            <Button.Label className="text-lg font-bold text-white">
+              Próximo →
+            </Button.Label>
           </Button>
         </Animated.View>
       </View>

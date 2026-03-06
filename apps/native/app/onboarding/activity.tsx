@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Button, Surface, Spinner } from "heroui-native";
+import { Button, Spinner } from "heroui-native";
 import { Text, View, Pressable } from "react-native";
 import Animated, {
   FadeInDown,
@@ -58,6 +58,7 @@ export default function OnboardingActivity() {
 
   const selectedSplit = MACRO_PRESETS[data.macroPreset].split;
 
+  // Global calculation for the summary block
   const results = calcGoals(
     data.currentWeightKg,
     data.heightCm,
@@ -73,32 +74,24 @@ export default function OnboardingActivity() {
 
   async function handleComplete() {
     const today = new Date().toISOString().split("T")[0];
-
     await saveProfile.mutateAsync({
       birthDate: `${data.birthYear}-01-01`,
       gender: data.gender,
       heightCm: data.heightCm,
       currentWeightKg: data.currentWeightKg,
-      // FIX 2: goalWeightKg is now passed and persisted
-      goalWeightKg: data.goalWeightKg,
       dailyCalorieGoal: results.calories,
       dailyProteinGoal: results.protein,
       dailyCarbsGoal: results.carbs,
       dailyFatGoal: results.fat,
       activityLevel: data.activityLevel,
-      // FIX 3: deficitPercentage is now saved so edit-goals can use
-      // the user's original choice rather than always defaulting to 20%
-      deficitPercentage: data.deficitPercentage,
       hasDiabetes: data.hasDiabetes,
       diabetesType: data.diabetesType,
       dailySugarLimitG: data.dailySugarLimitG,
     });
-
     await saveWeight.mutateAsync({
       date: today,
       weightKg: data.currentWeightKg,
     });
-
     await queryClient.invalidateQueries();
     router.replace("/(tabs)");
   }
@@ -114,7 +107,7 @@ export default function OnboardingActivity() {
             <Text className="text-foreground text-3xl font-bold mb-2">
               Nível de Atividade 🏃
             </Text>
-            <Text className="text-muted-foreground text-base mb-4">
+            <Text className="text-muted-foreground text-base mb-6">
               Qual o seu nível de atividade física?
             </Text>
           </Animated.View>
@@ -133,42 +126,39 @@ export default function OnboardingActivity() {
                     onPress={() => update({ activityLevel: opt.key })}
                     className="active:scale-[0.98]"
                   >
-                    <Surface
-                      variant="secondary"
-                      className={`py-3.5 px-4 rounded-2xl bg-card flex-row items-center gap-3 border-2 transition-colors ${
-                        isSelected ? "border-accent" : "border-transparent"
-                      }`}
+                    <View
+                      className={`p-4 rounded-3xl flex-row items-center gap-4 border-2 transition-colors ${isSelected ? "bg-card border-primary" : "bg-muted/30 border-transparent"}`}
                     >
-                      <Text className="text-2xl">{opt.emoji}</Text>
+                      <View className="w-12 h-12 rounded-2xl bg-background items-center justify-center">
+                        <Text className="text-2xl">{opt.emoji}</Text>
+                      </View>
                       <View className="flex-1">
                         <Text
-                          className={`text-base font-bold ${
-                            isSelected ? "text-primary" : "text-foreground"
-                          }`}
+                          className={`text-base font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
                         >
                           {opt.label}
                         </Text>
-                        <Text className="text-muted-foreground text-xs mt-0.5">
+                        <Text className="text-muted-foreground text-xs">
                           {opt.description}
                         </Text>
                       </View>
-                    </Surface>
+                    </View>
                   </Pressable>
                 </Animated.View>
               );
             })}
           </View>
 
-          {/* ── Macro Distribution ────────────────── */}
+          {/* ── Macro Distribution (Restored Previews!) ────────────────── */}
           <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-            <Text className="text-foreground text-xl font-bold mb-1">
+            <Text className="text-foreground text-xs font-bold uppercase tracking-wider mb-1 px-1">
               Distribuição de Macros 🥩🥑🍚
             </Text>
-            <Text className="text-muted-foreground text-sm mb-1">
+            <Text className="text-muted-foreground text-xs px-1 mb-3">
               Proteína / Gordura / Carboidratos
             </Text>
-            {data.hasDiabetes && (
-              <Text className="text-warning text-xs font-medium mb-3">
+            {!!data.hasDiabetes && (
+              <Text className="text-warning text-xs font-bold px-1 mb-4">
                 ⚠️ Recomendamos Low Carb para diabéticos
               </Text>
             )}
@@ -179,6 +169,8 @@ export default function OnboardingActivity() {
               const preset = MACRO_PRESETS[key];
               const isSelected = data.macroPreset === key;
               const isRecommended = data.hasDiabetes && key === "lower_carb";
+
+              // RESTORED: Dynamically calculate macros for this specific card
               const previewMacros = calcGoals(
                 data.currentWeightKg,
                 data.heightCm,
@@ -200,65 +192,65 @@ export default function OnboardingActivity() {
                     onPress={() => update({ macroPreset: key })}
                     className="active:scale-[0.98]"
                   >
-                    <Surface
-                      variant="secondary"
-                      className={`p-4 bg-card rounded-2xl border-2 transition-colors ${
-                        isSelected ? "border-accent" : "border-transparent"
-                      }`}
+                    <View
+                      className={`p-5 rounded-3xl border-2 transition-colors ${isSelected ? "bg-card border-primary" : "bg-muted/30 border-transparent"}`}
                     >
                       <View className="flex-row items-center justify-between mb-2">
                         <View className="flex-row items-center gap-2">
                           <Text
-                            className={`text-base font-bold ${
-                              isSelected ? "text-primary" : "text-foreground"
-                            }`}
+                            className={`text-base font-bold ${isSelected ? "text-primary" : "text-foreground"}`}
                           >
                             {preset.label}
                           </Text>
-                          {isRecommended && (
-                            <View className="bg-success/20 px-2 py-0.5 rounded">
-                              <Text className="text-success text-xs font-bold">
+                          {!!isRecommended && (
+                            <View className="bg-success/20 px-2 py-0.5 rounded border border-success/30">
+                              <Text className="text-success text-[10px] font-bold uppercase">
                                 Recomendado
                               </Text>
                             </View>
                           )}
                         </View>
-                        <View className="bg-secondary px-2.5 py-1 rounded-md">
-                          <Text className="text-muted-foreground text-xs font-bold">
+                        <View className="bg-background px-3 py-1 rounded-lg border border-border">
+                          <Text className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
                             {preset.tag}
                           </Text>
                         </View>
                       </View>
-                      <Text className="text-muted-foreground text-xs mb-3">
+
+                      <Text className="text-muted-foreground text-xs mb-4">
                         {preset.description}
                       </Text>
-                      <View className="flex-row justify-between">
+
+                      {/* RESTORED: Macro previews inside the card */}
+                      <View className="flex-row justify-between bg-background p-3 rounded-2xl border border-border">
                         <View className="items-center flex-1">
-                          <Text className="text-foreground text-lg font-bold">
+                          <Text className="text-foreground text-base font-bold">
                             {previewMacros.protein}g
                           </Text>
-                          <Text className="text-muted-foreground text-xs">
-                            proteína
+                          <Text className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
+                            Proteína
                           </Text>
                         </View>
+                        <View className="w-px bg-border" />
                         <View className="items-center flex-1">
-                          <Text className="text-foreground text-lg font-bold">
+                          <Text className="text-foreground text-base font-bold">
                             {previewMacros.fat}g
                           </Text>
-                          <Text className="text-muted-foreground text-xs">
-                            gordura
+                          <Text className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
+                            Gordura
                           </Text>
                         </View>
+                        <View className="w-px bg-border" />
                         <View className="items-center flex-1">
-                          <Text className="text-foreground text-lg font-bold">
+                          <Text className="text-foreground text-base font-bold">
                             {previewMacros.carbs}g
                           </Text>
-                          <Text className="text-muted-foreground text-xs">
-                            carbos
+                          <Text className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
+                            Carbos
                           </Text>
                         </View>
                       </View>
-                    </Surface>
+                    </View>
                   </Pressable>
                 </Animated.View>
               );
@@ -267,25 +259,22 @@ export default function OnboardingActivity() {
 
           {/* ── Summary ──────────────────────────── */}
           <Animated.View entering={FadeIn.delay(800).duration(500)}>
-            <Surface
-              variant="secondary"
-              className="p-5 rounded-2xl gap-3 border-2 border-accent"
-            >
-              <View className="items-center border-b border-border pb-3">
-                <Text className="text-muted-foreground text-sm font-medium">
+            <View className="p-6 rounded-3xl gap-3 border-2 border-primary/30 bg-primary/5">
+              <View className="items-center border-b border-primary/10 pb-4">
+                <Text className="text-muted-foreground text-xs font-bold uppercase tracking-widest">
                   Meta Diária
                 </Text>
-                <Text className="text-primary text-4xl font-bold mt-1">
+                <Text className="text-primary text-4xl font-black mt-1">
                   {results.calories} kcal
                 </Text>
-                <Text className="text-muted-foreground text-xs mt-1">
+                <Text className="text-muted-foreground text-xs mt-2 font-medium">
                   Déficit de {results.deficit} kcal/dia (manutenção:{" "}
                   {results.tdee})
                 </Text>
               </View>
-              <View className="flex-row justify-between">
+              <View className="flex-row justify-between pt-2">
                 <View className="items-center flex-1">
-                  <Text className="text-foreground font-bold text-lg">
+                  <Text className="text-foreground font-bold text-xl">
                     {results.protein}g
                   </Text>
                   <Text className="text-muted-foreground text-xs">
@@ -293,40 +282,44 @@ export default function OnboardingActivity() {
                   </Text>
                 </View>
                 <View className="items-center flex-1">
-                  <Text className="text-foreground font-bold text-lg">
+                  <Text className="text-foreground font-bold text-xl">
                     {results.fat}g
                   </Text>
                   <Text className="text-muted-foreground text-xs">Gordura</Text>
                 </View>
                 <View className="items-center flex-1">
-                  <Text className="text-foreground font-bold text-lg">
+                  <Text className="text-foreground font-bold text-xl">
                     {results.carbs}g
                   </Text>
                   <Text className="text-muted-foreground text-xs">Carbos</Text>
                 </View>
               </View>
-              {data.hasDiabetes && data.dailySugarLimitG && (
-                <View className="pt-3 border-t border-border">
-                  <Text className="text-warning text-xs text-center font-medium">
+
+              {/* RESTORED: Sugar limit display for diabetics */}
+              {!!(data.hasDiabetes && data.dailySugarLimitG) && (
+                <View className="pt-4 mt-2 border-t border-primary/10">
+                  <Text className="text-warning text-xs text-center font-bold">
                     🩺 Limite de açúcar: {data.dailySugarLimitG}g/dia
                   </Text>
                 </View>
               )}
-            </Surface>
+            </View>
           </Animated.View>
         </View>
 
         <Animated.View entering={FadeInUp.delay(900).duration(600).springify()}>
           <Button
             size="lg"
-            className="h-16 mt-6"
+            className="h-16 mt-6 rounded-3xl bg-primary"
             onPress={handleComplete}
             isDisabled={isSaving}
           >
             {isSaving ? (
-              <Spinner />
+              <Spinner color="default" />
             ) : (
-              <Button.Label className="text-lg">Começar Agora! 🚀</Button.Label>
+              <Button.Label className="text-lg font-bold text-white">
+                Começar Agora! 🚀
+              </Button.Label>
             )}
           </Button>
         </Animated.View>
