@@ -8,6 +8,9 @@ async function getAccessToken(
   clientId: string,
   clientSecret: string,
 ): Promise<string> {
+  const id = clientId.trim();
+  const secret = clientSecret.trim();
+
   if (cachedToken && Date.now() < tokenExpiresAt) {
     return cachedToken;
   }
@@ -16,7 +19,7 @@ async function getAccessToken(
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+      Authorization: `Basic ${btoa(`${id}:${secret}`)}`,
     },
     body: "grant_type=client_credentials&scope=basic premier",
   });
